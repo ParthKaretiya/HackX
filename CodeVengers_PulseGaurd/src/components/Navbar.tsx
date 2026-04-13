@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import BrandLogo from './BrandLogo';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from './ui/button';
+import { ThemeToggle } from './ThemeToggle';
+import { LanguageToggle } from './LanguageToggle';
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -78,6 +80,8 @@ const Navbar = () => {
 
         {/* User / Auth Section */}
         <div className="hidden md:flex items-center gap-4">
+          <LanguageToggle />
+          <ThemeToggle />
           {user ? (
             <div className="flex items-center gap-4">
               <Link to="/profile" className="flex items-center gap-2 group">

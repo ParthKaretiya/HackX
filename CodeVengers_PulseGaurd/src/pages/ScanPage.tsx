@@ -11,11 +11,13 @@ import {
   checkFileScan,
   mockRecentScans,
 } from "@/services/api";
-import { History, ScanSearch, ShieldCheck } from "lucide-react";
+import { History, ScanSearch, ShieldCheck, QrCode, FileText, Globe } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import ParticleBackground from "@/components/ParticleBackground";
+import { QRScanner } from "@/components/QRScanner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const ScanPage = () => {
   const [loading, setLoading] = useState(false);
@@ -102,23 +104,65 @@ const ScanPage = () => {
 
       {/* Scanner cards */}
       <section className="pb-24 relative z-20">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={containerVariants}
-            className="mx-auto grid max-w-6xl gap-8 md:grid-cols-2"
-          >
-            <motion.div variants={itemVariants} whileHover={{ y: -10, scale: 1.02 }} className="h-full relative group">
-              <div className="absolute inset-0 bg-primary/20 rounded-[2.5rem] blur-2xl group-hover:bg-primary/30 transition-all duration-500 opacity-0 group-hover:opacity-100"></div>
-              <ScanFormLink onScan={handleScanLink} loading={loading} />
-            </motion.div>
-            <motion.div variants={itemVariants} whileHover={{ y: -10, scale: 1.02 }} className="h-full relative group">
-              <div className="absolute inset-0 bg-[#3b82f6]/20 rounded-[2.5rem] blur-2xl group-hover:bg-[#3b82f6]/30 transition-all duration-500 opacity-0 group-hover:opacity-100"></div>
-              <ScanFormText onScan={handleScanText} onScanImage={handleScanImage} loading={loading} />
-            </motion.div>
-          </motion.div>
-        </div>
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={containerVariants}
+          className="container mx-auto px-4 max-w-4xl relative z-20"
+        >
+          <Tabs defaultValue="link" className="w-full">
+            <TabsList className="grid w-full grid-cols-3 h-16 rounded-[2rem] bg-black/20 backdrop-blur-3xl border border-white/10 p-2 mb-10">
+              <TabsTrigger value="link" className="rounded-full flex items-center gap-2 font-bold data-[state=active]:bg-primary data-[state=active]:text-white">
+                <Globe className="h-4 w-4" /> URL Link
+              </TabsTrigger>
+              <TabsTrigger value="text" className="rounded-full flex items-center gap-2 font-bold data-[state=active]:bg-primary data-[state=active]:text-white">
+                <FileText className="h-4 w-4" /> Message Text
+              </TabsTrigger>
+              <TabsTrigger value="qr" className="rounded-full flex items-center gap-2 font-bold data-[state=active]:bg-primary data-[state=active]:text-white">
+                <QrCode className="h-4 w-4" /> QR Code
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="link">
+              <div className="glass-panel p-10 rounded-[3rem] border border-white/10 shadow-2xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:scale-110 transition-transform duration-700">
+                  <Globe className="w-32 h-32" />
+                </div>
+                <h2 className="text-2xl font-black mb-8 flex items-center gap-3">
+                  <span className="p-2 bg-primary/20 rounded-xl"><Globe className="h-6 w-6 text-primary" /></span>
+                  URL Analysis
+                </h2>
+                <ScanFormLink onScan={handleScanLink} loading={loading} />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="text">
+              <div className="glass-panel p-10 rounded-[3rem] border border-white/10 shadow-2xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:scale-110 transition-transform duration-700">
+                  <FileText className="w-32 h-32" />
+                </div>
+                <h2 className="text-2xl font-black mb-8 flex items-center gap-3">
+                  <span className="p-2 bg-primary/20 rounded-xl"><FileText className="h-6 w-6 text-primary" /></span>
+                  Message Scrutiny
+                </h2>
+                <ScanFormText onScan={handleScanText} onScanImage={handleScanImage} loading={loading} />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="qr">
+              <div className="glass-panel p-10 rounded-[3rem] border border-white/10 shadow-2xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:scale-110 transition-transform duration-700">
+                  <QrCode className="w-32 h-32" />
+                </div>
+                <h2 className="text-2xl font-black mb-8 flex items-center gap-3">
+                  <span className="p-2 bg-primary/20 rounded-xl"><QrCode className="h-6 w-6 text-primary" /></span>
+                  QR Decryption
+                </h2>
+                <QRScanner onScan={handleScanLink} />
+              </div>
+            </TabsContent>
+          </Tabs>
+        </motion.div>
       </section>
 
       {/* Result */}

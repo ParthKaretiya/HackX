@@ -5,6 +5,7 @@ import heroImage from '@/assets/hero-shield.png';
 import { useAuth } from '@/context/AuthContext';
 import { motion, useMotionValue, useTransform, useSpring } from 'framer-motion';
 import { useRef, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface HeroSectionProps {
   onHowItWorks: () => void;
@@ -17,6 +18,7 @@ const benefits = [
 ];
 
 const HeroSection = ({ onHowItWorks }: HeroSectionProps) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const ref = useRef<HTMLDivElement>(null);
@@ -90,9 +92,9 @@ const HeroSection = ({ onHowItWorks }: HeroSectionProps) => {
               transition={{ delay: 0.3, duration: 0.6 }}
               className="mb-6 text-4xl font-black leading-[1.1] tracking-tight text-foreground md:text-5xl lg:text-6xl"
             >
-              Absolute Security. <br />
+              {t('hero_title')} <br />
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-[#3b82f6] to-cyan-400 drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]">
-                Zero Anxiety.
+                {t('hero_subtitle')}
               </span>
             </motion.h1>
 
@@ -100,9 +102,9 @@ const HeroSection = ({ onHowItWorks }: HeroSectionProps) => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: 0.6 }}
-              className="mb-8 text-xl text-muted-foreground max-w-lg leading-relaxed font-medium"
+              className="mb-10 max-w-lg text-lg text-muted-foreground font-medium"
             >
-              Experience a breakthrough in digital safety. Drag & drop any dubious link, message, or screenshot and watch our AI instantly dismantle hidden threats.
+              {t('hero_desc')}
             </motion.p>
 
             {/* Feature List */}

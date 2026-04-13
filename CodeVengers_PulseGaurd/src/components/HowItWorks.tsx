@@ -1,7 +1,8 @@
-import { ClipboardPaste, Search, Brain, CheckCircle, ArrowRight } from 'lucide-react';
+import { ClipboardPaste, Search, Brain, CheckCircle, ArrowRight, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { motion, useScroll, useTransform } from 'framer-motion';
+import { SafetyQuiz } from './SafetyQuiz';
 
 const steps = [
   {
@@ -120,8 +121,26 @@ const HowItWorks = () => {
             <ArrowRight className="h-8 w-8 transition-transform group-hover:translate-x-2" />
           </Button>
         </motion.div>
-      </div >
-    </section >
+        {/* Safety Quiz Section */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          className="mt-32 max-w-4xl mx-auto"
+        >
+          <div className="text-center mb-12">
+            <h3 className="text-3xl font-black mb-4 flex items-center justify-center gap-3">
+              <GraduationCap className="h-8 w-8 text-primary" />
+              Test Your Safety Knowledge
+            </h3>
+            <p className="text-muted-foreground font-medium">Think you can spot a scam? Take our quick interactive quiz.</p>
+          </div>
+          <div className="glass-panel p-8 md:p-12 rounded-[3rem] border border-white/10 shadow-2xl bg-black/40 backdrop-blur-3xl">
+            <SafetyQuiz />
+          </div>
+        </motion.div>
+      </div>
+    </section>
   );
 };
 

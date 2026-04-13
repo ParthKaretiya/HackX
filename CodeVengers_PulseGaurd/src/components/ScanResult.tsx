@@ -1,9 +1,12 @@
 import { ScanResultData } from '@/types/scan';
 import SafetyBadge from './SafetyBadge';
 import TruthBadge from './TruthBadge';
-import { AlertCircle, Globe, Clock, Tag, FileType, ExternalLink, ShieldCheck, ShieldAlert, Sparkles } from 'lucide-react';
+import { AlertCircle, Globe, Clock, Tag, FileType, ExternalLink, ShieldCheck, ShieldAlert, Sparkles, Download, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
+import { useRef } from 'react';
 
 interface ScanResultProps {
   result: ScanResultData;
@@ -25,6 +28,26 @@ const typeLabels: Record<string, string> = {
 
 const ScanResult = ({ result, mode = 'normal' }: ScanResultProps) => {
   const isSafe = result.safetyCategory === 'SAFE';
+  const reportRef = useRef<HTMLDivElement>(null);
+
+  const downloadPDF = async () => {
+    if (!reportRef.current) return;
+    
+    const canvas = await html2canvas(reportRef.current, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff'
+    });
+    
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const imgProps = pdf.getImageProperties(imgData);
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+    
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    pdf.save(`PulseGuard_Report_${new Date().getTime()}.pdf`);
+  };
 
   const recommendationBg =
     result.safetyCategory === 'DANGEROUS'
@@ -44,7 +67,8 @@ const ScanResult = ({ result, mode = 'normal' }: ScanResultProps) => {
   };
 
   return (
-    <motion.div initial="hidden" animate="visible" variants={containerVariants} className="glass-panel space-y-8 rounded-[2rem] p-8 lg:p-10 border border-white/5 shadow-2xl relative overflow-hidden">
+    <div ref={reportRef} className="p-4 bg-transparent">
+      <motion.div initial="hidden" animate="visible" variants={containerVariants} className="glass-panel space-y-8 rounded-[2rem] p-8 lg:p-10 border border-white/5 shadow-2xl relative overflow-hidden">
       {/* Decorative Background Glow based on status */}
       <div className={`absolute top-0 right-0 w-[400px] h-[400px] rounded-full blur-[120px] mix-blend-screen pointer-events-none opacity-20 ${result.safetyCategory === 'DANGEROUS' ? 'bg-dangerous' : result.safetyCategory === 'SUSPICIOUS' ? 'bg-warning' : 'bg-safe'
         }`} />
@@ -94,8 +118,16 @@ const ScanResult = ({ result, mode = 'normal' }: ScanResultProps) => {
       </motion.div>
 
       <motion.div variants={itemVariants} className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 border-t border-border/50 pt-8 relative z-10">
-        {/* Open Website button for SAFE links */}
-        <div>
+        {/* Action Buttons */}
+        <div className="flex flex-wrap gap-4">
+          <Button 
+            onClick={downloadPDF}
+            variant="outline" 
+            className="rounded-xl font-bold flex items-center gap-2 border-primary/20 hover:border-primary hover:bg-primary/5 transition-all"
+          >
+            <Download className="h-4 w-4" /> Download PDF Report
+          </Button>
+
           {isSafe && result.type === 'link' && result.input.startsWith('http') && (
             <motion.a
               whileHover={{ scale: 1.05 }}
@@ -125,6 +157,7 @@ const ScanResult = ({ result, mode = 'normal' }: ScanResultProps) => {
         )}
       </motion.div>
     </motion.div>
+    </div>
   );
 };
 

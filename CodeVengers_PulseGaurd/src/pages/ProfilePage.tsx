@@ -6,26 +6,26 @@ import { ScanResultData } from '@/types/scan';
 import { motion } from 'framer-motion';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, Mail, User, ShieldCheck, Clock, CheckCircle, Baby } from 'lucide-react';
+import { Shield, Mail, User, ShieldCheck, Clock, CheckCircle, Baby, TrendingUp, AlertTriangle } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { getParentScans } from '@/services/api';
 
 export default function ProfilePage() {
-  const { user, linkChildAccount } = useAuth();
-  const [scans, setScans] = useState<ScanResultData[]>([]);
+  const { user } = useAuth();
 
-  useEffect(() => {
-    const key = 'pulseguard_scans';
-    const raw = JSON.parse(localStorage.getItem(key) || '[]') as Array<{
-      uid: string;
-      content: string;
-      result: ScanResultData;
-      timestamp: string;
-    }>;
-    const items = raw
-      .filter((e) => (user?.uid ? e.uid === user.uid : true))
-      .slice(0, 10)
-      .map((e) => ({ ...e.result, timestamp: new Date(e.timestamp) }));
-    setScans(items);
-  }, [user?.uid]);
+  const { data: scansData, isLoading } = useQuery({
+    queryKey: ['myScans', user?.uid],
+    queryFn: getParentScans,
+    enabled: !!user?.uid,
+  });
+
+  const scans = scansData?.scans || [];
+
+  const safetyScore = useMemo(() => {
+    if (scans.length === 0) return 100;
+    const totalScore = scans.reduce((acc: number, s: any) => acc + (100 - s.riskScore), 0);
+    return Math.round(totalScore / scans.length);
+  }, [scans]);
 
   const roleLabel = useMemo(() => {
     if (!user) return '';
@@ -103,6 +103,28 @@ export default function ProfilePage() {
                       </p>
                     </div>
                   </div>
+                </div>
+
+                <div className="mt-4 p-6 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 shadow-inner">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">Current Safety Score</span>
+                    <TrendingUp className="h-5 w-5 text-emerald-500" />
+                  </div>
+                  <div className="flex items-end gap-2">
+                    <span className="text-5xl font-black text-foreground">{safetyScore}%</span>
+                    <span className="text-sm font-bold text-emerald-500 mb-1.5 uppercase">Elite Protection</span>
+                  </div>
+                  <div className="mt-4 h-2 w-full bg-secondary rounded-full overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${safetyScore}%` }}
+                      transition={{ duration: 1, type: "spring" }}
+                      className="h-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                    />
+                  </div>
+                  <p className="mt-4 text-xs font-medium text-muted-foreground">
+                    Based on your last {scans.length} safety scans and detected risk factors.
+                  </p>
                 </div>
 
                 <div className="h-[1px] bg-border/50 w-full mt-2" />

@@ -6,35 +6,89 @@ import { ShieldCheck, ArrowLeft, Clock, Globe, Bell, ChevronRight, AlertTriangle
 import { useRequireRole } from '@/context/AuthContext';
 import { motion } from 'framer-motion';
 import ParticleBackground from '@/components/ParticleBackground';
+import { useQuery } from '@tanstack/react-query';
+import { getParentScans, getChildren } from '@/services/api';
 
-const mockAlerts = [
-  { id: '1', time: '2 min ago', child: 'Arjun', url: 'https://secure-banklogin.xyz/verify', risk: 'DANGEROUS' as const, status: 'Blocked' },
-  { id: '2', time: '15 min ago', child: 'Arjun', url: 'https://free-prizes.click/winner', risk: 'SUSPICIOUS' as const, status: 'Blocked' },
-  { id: '3', time: '1 hour ago', child: 'Priya', url: 'https://en.wikipedia.org/wiki/Space', risk: 'SAFE' as const, status: 'Allowed' },
-];
+import { Skeleton } from '@/components/ui/skeleton';
 
 const ParentPage = () => {
   useRequireRole('parent');
   const location = useLocation();
 
+  const { data: scansData, isLoading: scansLoading } = useQuery({
+    queryKey: ['parentScans'],
+    queryFn: getParentScans,
+  });
+
+  const { data: childrenData } = useQuery({
+    queryKey: ['children'],
+    queryFn: getChildren,
+  });
+
+  const scans = scansData?.scans || [];
+  const children = childrenData?.children || [];
+
+  const alerts = scans.slice(0, 5).map((s: any) => ({
+    id: s.id,
+    time: new Date(s.createdAt).toLocaleTimeString(),
+    child: s.userName,
+    url: s.input,
+    risk: s.riskCategory,
+    status: s.riskCategory === 'SAFE' ? 'Allowed' : 'Blocked'
+  }));
+
   const patternCards = [
-    { title: 'Prize Scam spikes', value: '5', subtitle: 'High‑risk in 24h', tone: 'dangerous' },
-    { title: 'Unique phishing domains', value: '3', subtitle: 'This week', tone: 'suspicious' },
-    { title: 'OTP keyword matches', value: '12', subtitle: 'Last 7 days', tone: 'warning' },
-    { title: 'Urgency patterns', value: '8', subtitle: 'Past 48h', tone: 'warning' },
+    { 
+      title: 'High Risk Scans', 
+      value: scans.filter((s: any) => s.riskCategory === 'DANGEROUS').length.toString(), 
+      subtitle: 'Total detected', 
+      tone: 'dangerous' 
+    },
+    { 
+      title: 'Suspicious Scans', 
+      value: scans.filter((s: any) => s.riskCategory === 'SUSPICIOUS').length.toString(), 
+      subtitle: 'Need review', 
+      tone: 'suspicious' 
+    },
+    { 
+      title: 'Protected Members', 
+      value: children.length.toString(), 
+      subtitle: 'Linked accounts', 
+      tone: 'safe' 
+    },
+    { 
+      title: 'Total Scans', 
+      value: scans.length.toString(), 
+      subtitle: 'Last 30 days', 
+      tone: 'warning' 
+    },
   ];
 
-  const groupedByDomain = [
-    { domain: 'secure-banklogin.xyz', count: 4, risk: 'dangerous' },
-    { domain: 'free-prizes.click', count: 3, risk: 'suspicious' },
-    { domain: 'short.link', count: 2, risk: 'warning' },
-  ];
+  const groupedByDomain = Object.entries(
+    scans.reduce((acc: any, s: any) => {
+      try {
+        const domain = new URL(s.input).hostname;
+        acc[domain] = (acc[domain] || 0) + 1;
+      } catch { }
+      return acc;
+    }, {})
+  ).map(([domain, count]) => ({
+    domain,
+    count: count as number,
+    risk: scans.find((s: any) => s.input.includes(domain))?.riskCategory.toLowerCase() || 'safe'
+  })).slice(0, 5);
 
-  const groupedByTags = [
-    { tag: 'OTP', count: 7 },
-    { tag: 'Prize', count: 5 },
-    { tag: 'Urgency', count: 6 },
-  ];
+  const groupedByTags = Object.entries(
+    scans.reduce((acc: any, s: any) => {
+      s.reasons?.forEach((tag: string) => {
+        acc[tag] = (acc[tag] || 0) + 1;
+      });
+      return acc;
+    }, {})
+  ).map(([tag, count]) => ({
+    tag,
+    count: count as number
+  })).slice(0, 8);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -108,10 +162,10 @@ const ParentPage = () => {
           {/* Quick Stats */}
           <motion.div variants={containerVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { title: 'Total Scans', val: '148', icon: Lock, color: 'text-foreground', bg: 'shadow-white/5' },
-              { title: 'Safe Links', val: '132', icon: ShieldCheck, color: 'text-safe', bg: 'shadow-safe/20' },
-              { title: 'Threats Blocked', val: '16', icon: AlertTriangle, color: 'text-dangerous', bg: 'shadow-dangerous/20' },
-              { title: 'Avg Score', val: '92%', icon: Activity, color: 'text-primary', bg: 'shadow-primary/20' }
+              { title: 'Total Scans', val: scans.length.toString(), icon: Lock, color: 'text-foreground', bg: 'shadow-white/5' },
+              { title: 'Safe Links', val: scans.filter((s: any) => s.riskCategory === 'SAFE').length.toString(), icon: ShieldCheck, color: 'text-safe', bg: 'shadow-safe/20' },
+              { title: 'Threats Blocked', val: scans.filter((s: any) => s.riskCategory !== 'SAFE').length.toString(), icon: AlertTriangle, color: 'text-dangerous', bg: 'shadow-dangerous/20' },
+              { title: 'Safety Score', val: scans.length > 0 ? `${Math.round(scans.reduce((acc: any, s: any) => acc + (100 - s.riskScore), 0) / scans.length)}%` : '100%', icon: Activity, color: 'text-primary', bg: 'shadow-primary/20' }
             ].map((s, i) => (
               <motion.div variants={itemVariants} whileHover={{ y: -10 }} key={i} className={`glass-panel rounded-[2.5rem] p-8 relative overflow-hidden group transition-all shadow-xl \${s.bg} border border-white/10 bg-black/40`}>
             <div className="absolute -top-4 -right-4 p-4 opacity-5 group-hover:scale-125 group-hover:rotate-12 transition-transform duration-700">
@@ -146,24 +200,42 @@ const ParentPage = () => {
             </tr>
           </thead>
           <tbody>
-            {mockAlerts.map((a) => (
-              <tr key={a.id} className="border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors group">
-                <td className="whitespace-nowrap px-8 py-5 font-bold text-muted-foreground group-hover:text-white transition-colors">
-                  <Clock className="mr-3 inline h-5 w-5 opacity-70" />{a.time}
+            {scansLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <tr key={i} className="border-b border-white/5">
+                  <td className="px-8 py-5"><Skeleton className="h-4 w-24" /></td>
+                  <td className="px-8 py-5"><Skeleton className="h-4 w-20" /></td>
+                  <td className="px-8 py-5"><Skeleton className="h-4 w-40" /></td>
+                  <td className="px-8 py-5"><Skeleton className="h-6 w-16 rounded-full" /></td>
+                  <td className="px-8 py-5"><Skeleton className="h-8 w-20 rounded-xl" /></td>
+                </tr>
+              ))
+            ) : alerts.length > 0 ? (
+              alerts.map((a: any) => (
+                <tr key={a.id} className="border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors group">
+                  <td className="whitespace-nowrap px-8 py-5 font-bold text-muted-foreground group-hover:text-white transition-colors">
+                    <Clock className="mr-3 inline h-5 w-5 opacity-70" />{a.time}
+                  </td>
+                  <td className="px-8 py-5 font-black text-foreground text-base">{a.child}</td>
+                  <td className="max-w-[200px] truncate px-8 py-5 font-mono text-sm text-foreground/70">
+                    <Globe className="mr-3 inline h-4 w-4 opacity-70" />{a.url}
+                  </td>
+                  <td className="px-8 py-5"><SafetyBadge category={a.risk} /></td>
+                  <td className="px-8 py-5">
+                    <span className={`inline-flex items-center rounded-xl px-4 py-2 font-black shadow-sm ${a.status === 'Blocked' ? 'bg-red-500/20 text-red-500 border border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)]' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'}`}>
+                      {a.status}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={5} className="px-8 py-10 text-center text-muted-foreground font-bold">
+                  No interventions recorded yet. Your family is safe.
                 </td>
-                <td className="px-8 py-5 font-black text-foreground text-base">{a.child}</td>
-                <td className="max-w-[200px] truncate px-8 py-5 font-mono text-sm text-foreground/70">
-                  <Globe className="mr-3 inline h-4 w-4 opacity-70" />{a.url}
-                </td>
-                <td className="px-8 py-5"><SafetyBadge category={a.risk} /></td>
-                <td className="px-8 py-5">
-                  <span className={`inline-flex items-center rounded-xl px-4 py-2 font-black shadow-sm \${a.status === 'Blocked' ? 'bg-red-500/20 text-red-500 border border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)]' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'}`}>
-                  {a.status}
-                </span>
-              </td>
-                        </tr>
-                      ))}
-        </tbody>
+              </tr>
+            )}
+          </tbody>
       </table>
     </div>
   </div>

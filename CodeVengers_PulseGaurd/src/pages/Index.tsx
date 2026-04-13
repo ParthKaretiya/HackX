@@ -12,10 +12,11 @@ import CtaFooter from '@/components/CtaFooter';
 import { mockRecentScans } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { motion } from 'framer-motion';
-import { Users, ArrowRight } from 'lucide-react';
+import { Users, ArrowRight, ShieldCheck } from 'lucide-react';
 
 import ParticleBackground from '@/components/ParticleBackground';
 import CyberCellSection from '@/components/CyberCellSection';
+import { SafetyFeed } from '@/components/SafetyFeed';
 
 const Index = () => {
   const howItWorksRef = useRef<HTMLDivElement>(null);
@@ -46,7 +47,7 @@ const Index = () => {
       {/* 5. What it checks */}
       <WhatItChecks />
 
-      {/* 6. Recent scans preview */}
+      {/* 6. Recent scans preview & Live Feed */}
       <section className="py-20 md:py-32 relative z-10">
         <div className="container mx-auto px-4">
           <motion.div
@@ -56,21 +57,38 @@ const Index = () => {
             className="mb-12 text-center"
           >
             <h2 className="mb-4 text-4xl font-black tracking-tight text-foreground md:text-5xl lg:text-6xl bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/80">
-              See PulseGuard in Action
+              Real-Time Security Intelligence
             </h2>
             <p className="mx-auto mb-8 max-w-2xl text-lg text-muted-foreground font-medium">
-              Live telemetry of recent threat interceptions and safe URL verifications handled by the system.
+              See how PulseGuard is actively protecting users across India with live telemetry and threat interceptions.
             </p>
           </motion.div>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="mx-auto max-w-5xl glass-panel rounded-3xl p-6 md:p-10 shadow-2xl border-white/5"
-          >
-            <HistoryList scans={mockRecentScans.slice(0, 6)} compact />
-          </motion.div>
+          
+          <div className="grid gap-12 lg:grid-cols-2">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="glass-panel rounded-3xl p-6 md:p-10 shadow-2xl border-white/5 bg-black/40 backdrop-blur-3xl"
+            >
+              <h3 className="text-2xl font-black mb-8 flex items-center gap-3">
+                <ShieldCheck className="h-6 w-6 text-emerald-400" />
+                Latest Verifications
+              </h3>
+              <HistoryList scans={mockRecentScans.slice(0, 6)} compact />
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="glass-panel rounded-3xl p-6 md:p-10 shadow-2xl border-white/5 bg-black/40 backdrop-blur-3xl"
+            >
+              <SafetyFeed />
+            </motion.div>
+          </div>
         </div>
       </section>
 
