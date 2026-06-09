@@ -1,194 +1,197 @@
-import { Shield, History, Menu, X, ScanSearch, Users, LogOut, User } from 'lucide-react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import BrandLogo from './BrandLogo';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { Button } from './ui/button';
+import { Shield, Menu, X, LogOut, Scan, History, Users, Sun, Moon, User } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ThemeToggle } from './ThemeToggle';
 import { LanguageToggle } from './LanguageToggle';
+import { useTranslation } from 'react-i18next';
 
 const Navbar = () => {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const location = useLocation();
-  const navigate = useNavigate();
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, logout } = useAuth();
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const navLink = (path: string, label: string, Icon?: typeof Shield) => {
-    const active = location.pathname === path;
-    return (
-      <Link
-        to={path}
-        className={`relative flex items-center gap-2 text-sm font-semibold transition-all duration-300 hover:text-primary ${active ? 'text-primary' : 'text-muted-foreground'
-          }`}
-      >
-        {Icon && <Icon className="h-4 w-4" />}
-        {label}
-        {active && (
-          <motion.div
-            layoutId="nav-indicator"
-            className="absolute -bottom-[21px] left-0 h-1 w-full rounded-t-full bg-primary"
-            initial={false}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-          />
-        )}
-      </Link>
-    );
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+    setMobileMenuOpen(false);
   };
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/');
-  };
+  const isHome = location.pathname === '/';
 
   return (
-    <motion.nav
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-      className={`sticky top-0 z-50 w-full transition-all duration-300 ${scrolled ? 'bg-background/80 backdrop-blur-xl border-b border-border shadow-sm' : 'bg-transparent'
+    <>
+      <nav
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          isScrolled ? 'bg-background/80 backdrop-blur-xl border-b border-border shadow-sm py-3' : 'bg-transparent py-5'
         }`}
-    >
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <Link to="/" className="flex items-center gap-2.5 group">
-          <motion.div
-            whileHover={{ rotate: 15, scale: 1.1 }}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-[hsl(220,80%,50%)] shadow-lg shadow-primary/20"
-          >
-            <BrandLogo className="h-5 w-5 text-white" />
-          </motion.div>
-          <span className="text-xl font-extrabold tracking-tight text-foreground transition-colors group-hover:text-primary">
-            PulseGuard
-          </span>
-        </Link>
-
-        {/* Desktop Nav */}
-        <div className="hidden items-center gap-8 md:flex">
-          {navLink('/', 'Home')}
-          {navLink('/scanner', 'Scanner', ScanSearch)}
-          {navLink('/history', 'History', History)}
-          {navLink('/family', 'Family Setup', Users)}
-          {navLink('/cyber-cell', 'Cyber Cell', Shield)}
-        </div>
-
-        {/* User / Auth Section */}
-        <div className="hidden md:flex items-center gap-4">
-          <LanguageToggle />
-          <ThemeToggle />
-          {user ? (
-            <div className="flex items-center gap-4">
-              <Link to="/profile" className="flex items-center gap-2 group">
-                <div className="h-9 w-9 rounded-full bg-secondary border-2 border-primary/20 flex items-center justify-center transition-all group-hover:border-primary">
-                  <User className="h-4 w-4 text-foreground group-hover:text-primary" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xs font-bold text-foreground leading-none">{user.name}</span>
-                  <span className="text-[10px] text-muted-foreground capitalize leading-relaxed w-full text-right">{user.role}</span>
-                </div>
-              </Link>
-              <Button variant="ghost" size="icon" onClick={handleLogout} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl transition-colors">
-                <LogOut className="h-5 w-5" />
-              </Button>
+      >
+        <div className="container mx-auto px-6 max-w-7xl flex items-center justify-between">
+          
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-3 group">
+            <div className="h-9 w-9 rounded-xl bg-blue-500 flex items-center justify-center shadow-md shadow-blue-500/20 transition-transform group-hover:scale-105">
+              <Shield className="h-5 w-5 text-white" strokeWidth={2} />
             </div>
-          ) : (
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" asChild className="rounded-xl font-semibold">
-                <Link to="/auth">Login</Link>
-              </Button>
-              <Button asChild className="rounded-xl font-semibold shadow-md shadow-primary/20 hover:shadow-primary/40 transition-all">
-                <Link to="/auth?mode=register">Get Started</Link>
-              </Button>
-            </div>
-          )}
-        </div>
+            <span className="font-display font-bold text-xl tracking-tight text-foreground">
+              {t('app_name')}
+            </span>
+          </Link>
 
-        {/* Mobile Toggle */}
-        <div className="md:hidden flex items-center gap-4">
-          {!user && (
-            <Button size="sm" asChild className="rounded-xl shadow-md h-8 text-xs">
-              <Link to="/auth?mode=register">Get Started</Link>
-            </Button>
-          )}
+          {/* Desktop Navigation */}
+          <div className="hidden lg:flex items-center gap-8">
+            <Link to="/" className={`relative flex items-center gap-2 text-[15px] font-semibold transition-colors py-2 px-1 ${isHome ? 'text-blue-500' : 'text-muted-foreground hover:text-foreground'}`}>
+              {t('home')}
+              {isHome && (
+                <motion.div layoutId="nav-indicator" className="absolute bottom-[-16px] left-0 right-0 h-0.5 bg-blue-500" />
+              )}
+            </Link>
+            <Link to="/scanner" className={`relative flex items-center gap-2 text-[15px] font-semibold transition-colors py-2 px-1 ${location.pathname === '/scanner' ? 'text-blue-500' : 'text-muted-foreground hover:text-foreground'}`}>
+              <Scan className="h-4 w-4" /> {t('scanner')}
+              {location.pathname === '/scanner' && (
+                <motion.div layoutId="nav-indicator" className="absolute bottom-[-16px] left-0 right-0 h-0.5 bg-blue-500" />
+              )}
+            </Link>
+            <Link to="/history" className={`relative flex items-center gap-2 text-[15px] font-semibold transition-colors py-2 px-1 ${location.pathname === '/history' ? 'text-blue-500' : 'text-muted-foreground hover:text-foreground'}`}>
+              <History className="h-4 w-4" /> {t('history')}
+              {location.pathname === '/history' && (
+                <motion.div layoutId="nav-indicator" className="absolute bottom-[-16px] left-0 right-0 h-0.5 bg-blue-500" />
+              )}
+            </Link>
+            <Link to="/family" className={`relative flex items-center gap-2 text-[15px] font-semibold transition-colors py-2 px-1 ${location.pathname.includes('/family') ? 'text-blue-500' : 'text-muted-foreground hover:text-foreground'}`}>
+              <Users className="h-4 w-4" /> {t('family_setup')}
+              {location.pathname.includes('/family') && (
+                <motion.div layoutId="nav-indicator" className="absolute bottom-[-16px] left-0 right-0 h-0.5 bg-blue-500" />
+              )}
+            </Link>
+            <Link to="/cyber-cell" className={`relative flex items-center gap-2 text-[15px] font-semibold transition-colors py-2 px-1 ${location.pathname === '/cyber-cell' ? 'text-blue-500' : 'text-muted-foreground hover:text-foreground'}`}>
+              <Shield className="h-4 w-4" /> {t('cyber_cell')}
+              {location.pathname === '/cyber-cell' && (
+                <motion.div layoutId="nav-indicator" className="absolute bottom-[-16px] left-0 right-0 h-0.5 bg-blue-500" />
+              )}
+            </Link>
+          </div>
+
+          {/* Desktop Actions */}
+          <div className="hidden lg:flex items-center gap-5">
+            <LanguageToggle />
+            <ThemeToggle />
+            
+            {user ? (
+              <div className="flex items-center gap-4 border-l border-border pl-5">
+                <Link to="/profile" className="flex items-center gap-3 group">
+                  <div className="h-9 w-9 rounded-full bg-secondary flex items-center justify-center border border-border group-hover:border-blue-500 transition-colors">
+                    <User className="h-4 w-4 text-muted-foreground group-hover:text-blue-500 transition-colors" />
+                  </div>
+                  <div className="flex flex-col text-left">
+                    <span className="text-[13px] font-semibold text-foreground leading-tight group-hover:text-blue-500 transition-colors">{user.name || user.email?.split('@')[0] || 'User'}</span>
+                    <span className="text-[10px] text-muted-foreground capitalize leading-tight">{user.role}</span>
+                  </div>
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="text-muted-foreground hover:text-destructive transition-colors ml-2"
+                  title={t('logout') || 'Sign Out'}
+                >
+                  <LogOut className="h-5 w-5" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 border-l border-border pl-5">
+                <Link
+                  to="/auth"
+                  className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {t('login')}
+                </Link>
+                <Link
+                  to="/auth"
+                  className="px-5 py-2 rounded-full text-sm font-semibold bg-foreground text-background hover:scale-105 transition-transform"
+                >
+                  {t('signup')}
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* Mobile Menu Toggle */}
           <button
-            className="text-foreground p-2 rounded-lg bg-secondary/50"
-            onClick={() => setMobileOpen(!mobileOpen)}
+            className="lg:hidden h-10 w-10 flex items-center justify-center text-foreground"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
-            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
         </div>
-      </div>
+      </nav>
 
-      {/* Mobile Nav */}
+      {/* Mobile Menu Overlay */}
       <AnimatePresence>
-        {mobileOpen && (
+        {mobileMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="border-t border-border bg-background/95 backdrop-blur-xl md:hidden overflow-hidden"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed inset-0 z-40 bg-background/95 backdrop-blur-xl pt-24 px-6 lg:hidden flex flex-col"
           >
-            <div className="flex flex-col p-4 gap-2">
-              {[
-                { path: '/', label: 'Home', icon: Shield },
-                { path: '/scanner', label: 'Scanner', icon: ScanSearch },
-                { path: '/history', label: 'History', icon: History },
-                { path: '/family', label: 'Family Setup', icon: Users },
-                { path: '/cyber-cell', label: 'Cyber Cell', icon: Shield }
-              ].map((link) => (
-                <Link
-                  key={link.path}
-                  to={link.path}
-                  onClick={() => setMobileOpen(false)}
-                  className={`px-4 py-3 flex items-center gap-3 rounded-xl text-sm font-semibold transition-all ${location.pathname === link.path ? 'bg-primary/10 text-primary' : 'hover:bg-secondary text-foreground'
-                    }`}
-                >
-                  <link.icon className="h-5 w-5" />
-                  {link.label}
-                </Link>
-              ))}
-
-              <div className="h-[1px] bg-border my-2 w-full" />
+            <div className="flex flex-col gap-6 text-lg font-semibold text-foreground">
+              <Link to="/" onClick={() => setMobileMenuOpen(false)} className="py-2 border-b border-border/50">{t('home')}</Link>
+              <Link to="/scanner" onClick={() => setMobileMenuOpen(false)} className="py-2 border-b border-border/50 flex items-center gap-3">
+                <Scan className="h-5 w-5" /> {t('scanner')}
+              </Link>
+              <Link to="/history" onClick={() => setMobileMenuOpen(false)} className="py-2 border-b border-border/50 flex items-center gap-3">
+                <History className="h-5 w-5" /> {t('history')}
+              </Link>
+              <Link to="/family" onClick={() => setMobileMenuOpen(false)} className="py-2 border-b border-border/50 flex items-center gap-3">
+                <Users className="h-5 w-5" /> {t('family_setup')}
+              </Link>
+              <Link to="/cyber-cell" onClick={() => setMobileMenuOpen(false)} className="py-2 border-b border-border/50 flex items-center gap-3">
+                <Shield className="h-5 w-5" /> {t('cyber_cell')}
+              </Link>
 
               {user ? (
                 <>
-                  <Link
-                    to="/profile"
-                    onClick={() => setMobileOpen(false)}
-                    className="px-4 py-3 rounded-xl text-sm font-semibold hover:bg-secondary text-foreground flex items-center gap-3"
-                  >
-                    <User className="h-5 w-5 text-primary" />
-                    Profile ({user.name})
+                  <Link to="/profile" onClick={() => setMobileMenuOpen(false)} className="py-2 border-b border-border/50 flex items-center gap-3">
+                    Profile
                   </Link>
-                  <button
-                    onClick={() => {
-                      handleLogout();
-                      setMobileOpen(false);
-                    }}
-                    className="px-4 py-3 w-full rounded-xl text-sm font-semibold text-destructive hover:bg-destructive/10 text-left flex items-center gap-3"
-                  >
-                    <LogOut className="h-5 w-5" />
-                    Logout
+                  <button onClick={handleLogout} className="py-2 text-destructive flex items-center gap-3 text-left">
+                    <LogOut className="h-5 w-5" /> Sign Out
                   </button>
                 </>
               ) : (
-                <div className="grid grid-cols-2 gap-3 mt-2">
-                  <Button variant="outline" asChild className="rounded-xl w-full" onClick={() => setMobileOpen(false)}>
-                    <Link to="/auth">Login</Link>
-                  </Button>
+                <div className="flex flex-col gap-3 mt-4">
+                  <Link
+                    to="/auth"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="w-full py-3 rounded-xl bg-secondary text-foreground text-center"
+                  >
+                    Log in
+                  </Link>
+                  <Link
+                    to="/auth"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="w-full py-3 rounded-xl bg-foreground text-background text-center"
+                  >
+                    Sign up
+                  </Link>
                 </div>
               )}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.nav>
+    </>
   );
 };
 

@@ -1,21 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import {
-  Users,
-  Baby,
-  ShieldCheck,
-  ArrowLeft,
-  ArrowRight,
-  CheckCircle2,
-  User,
-  ShieldAlert
-} from 'lucide-react';
+import { Users, Baby, ShieldCheck, ArrowLeft, ArrowRight, CheckCircle2, User, ShieldAlert, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import ParticleBackground from '@/components/ParticleBackground';
 
 type Role = 'parent' | 'child' | null;
 
@@ -25,14 +13,16 @@ const FamilyPage = () => {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [role, setRole] = useState<Role>(null);
 
-  // Parent fields
   const [parentName, setParentName] = useState(user?.name || '');
   const [childName, setChildName] = useState('');
-
-  // Child fields
   const [kidName, setKidName] = useState(user?.name || '');
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    // If they already have a role and came here, maybe they want to switch or see status.
+    // We'll let them proceed, but typically they wouldn't hit this unless upgrading.
+  }, []);
 
   const selectRole = (r: Role) => {
     setRole(r);
@@ -60,237 +50,192 @@ const FamilyPage = () => {
   };
 
   const fadeVariants = {
-    hidden: { opacity: 0, y: 30, scale: 0.95 },
-    visible: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring', stiffness: 200, damping: 20 } },
-    exit: { opacity: 0, y: -20, scale: 0.95, transition: { duration: 0.2 } }
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 200, damping: 20 } },
+    exit: { opacity: 0, y: -20, transition: { duration: 0.2 } }
   };
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden mesh-bg pb-20">
-      <ParticleBackground />
-      <div className="absolute top-1/4 left-1/4 w-[800px] h-[800px] bg-primary/10 blur-[150px] rounded-full mix-blend-screen pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-[#3b82f6]/10 blur-[150px] rounded-full mix-blend-screen pointer-events-none" />
+    <div className="min-h-screen relative overflow-x-hidden">
+      {/* Background blobs */}
+      <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-primary/5 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-blue-500/5 blur-[120px] rounded-full pointer-events-none" />
 
       <Navbar />
 
-      <section className="py-16 md:py-24 relative z-10 w-full flex flex-col items-center">
-        <div className="container mx-auto px-4 text-center max-w-3xl">
-          <motion.div
-            initial={{ scale: 0.5, opacity: 0, rotate: -10 }}
-            animate={{ scale: 1, opacity: 1, rotate: 0 }}
-            transition={{ type: "spring", stiffness: 200, damping: 20 }}
-            className="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-[2.5rem] bg-gradient-to-br from-primary to-[#3b82f6] shadow-[0_0_50px_rgba(59,130,246,0.5)] transform hover:scale-110 transition-transform duration-500"
-          >
-            <ShieldAlert className="h-12 w-12 text-white animate-pulse" />
-          </motion.div>
-
-          <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }}>
-            <h1 className="mb-6 text-4xl font-black tracking-tight text-foreground md:text-5xl lg:text-6xl drop-shadow-xl text-gradient">
-              Family Defense Configuration
-            </h1>
-            <p className="mx-auto max-w-xl text-xl text-muted-foreground font-medium drop-shadow-sm">
+      <section className="py-16 md:py-24 relative z-10">
+        <div className="container mx-auto px-4 max-w-4xl">
+          {/* Header */}
+          <div className="text-center mb-12">
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-[2rem] bg-gradient-primary shadow-[0_0_40px_hsl(210_100%_56%/0.3)]"
+            >
+              <ShieldAlert className="h-10 w-10 text-white" />
+            </motion.div>
+            <motion.h1 initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }} className="text-4xl md:text-5xl font-display font-bold tracking-tight mb-4 text-foreground">
+              Family <span className="text-gradient">Defense</span>
+            </motion.h1>
+            <motion.p initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }} className="text-muted-foreground font-medium text-lg max-w-xl mx-auto">
               Establish secure parental overrides or enable highly restricted child browsing sessions natively in the browser.
-            </p>
-          </motion.div>
-        </div>
-      </section>
-
-      <section className="pb-24 relative z-20">
-        <div className="container mx-auto max-w-3xl px-4 relative">
-          {/* Neon Grid Glow */}
-          <div className="absolute -inset-10 bg-gradient-to-r from-primary/10 to-[#3b82f6]/10 rounded-[4rem] blur-3xl opacity-50" />
-
-          {/* Step indicator */}
-          <AnimatePresence>
-            {step < 3 && (
-              <motion.div
-                initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }}
-                className="mb-12 flex items-center justify-center gap-4 text-sm text-white/50 relative z-10"
-              >
-                <motion.span whileHover={{ scale: 1.1 }} className={`flex h-10 w-10 items-center justify-center rounded-2xl text-sm font-black transition-all shadow-lg \${step >= 1 ? 'bg-gradient-to-br from-primary to-[#3b82f6] text-white shadow-[0_0_20px_rgba(59,130,246,0.5)]' : 'bg-white/5 border border-white/10'}`}>1</motion.span>
-                <div className="h-1 w-24 rounded-full overflow-hidden bg-white/5 shadow-inner">
-                  <div className="h-full bg-gradient-to-r from-primary to-[#3b82f6] transition-all duration-700 ease-in-out" style={{ width: step >= 2 ? '100%' : '0%' }} />
-                </div>
-                <motion.span whileHover={{ scale: 1.1 }} className={`flex h-10 w-10 items-center justify-center rounded-2xl text-sm font-black transition-all shadow-lg \${step >= 2 ? 'bg-gradient-to-br from-primary to-[#3b82f6] text-white shadow-[0_0_20px_rgba(59,130,246,0.5)]' : 'bg-white/5 border border-white/10'}`}>2</motion.span>
-              </motion.div>
-            )}
-          </AnimatePresence>
+            </motion.p>
+          </div>
 
           <AnimatePresence mode="wait">
-            {/* Step 1 – Who are you? */}
+            {/* Step 1 */}
             {step === 1 && (
-              <motion.div key="step1" variants={fadeVariants} initial="hidden" animate="visible" exit="exit" className="space-y-8 relative z-10">
-                <div className="text-center mb-8">
-                  <h2 className="text-3xl font-black text-foreground tracking-tight drop-shadow-md">Select Operational Logic</h2>
-                  <p className="text-muted-foreground font-medium mt-2 text-lg">Define the clearance level for this browser session.</p>
-                </div>
-
-                <div className="grid gap-8 sm:grid-cols-2">
+              <motion.div key="step1" variants={fadeVariants} initial="hidden" animate="visible" exit="exit" className="max-w-3xl mx-auto">
+                <div className="grid gap-6 sm:grid-cols-2">
+                  {/* Parent */}
                   <motion.button
-                    whileHover={{ scale: 1.05, y: -10 }} whileTap={{ scale: 0.95 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => selectRole('parent')}
-                    className="group relative overflow-hidden rounded-[3rem] p-10 border border-white/10 text-center transition-all shadow-[0_20px_40px_rgba(0,0,0,0.5)] bg-black/40 backdrop-blur-3xl"
+                    className="group glass-card rounded-3xl p-8 border border-white/5 hover:border-primary/50 transition-all flex flex-col items-center text-center"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-                    <div className="relative z-10 flex flex-col items-center">
-                      <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-[2rem] bg-gradient-to-br from-primary/20 to-primary/5 shadow-inner group-hover:from-primary group-hover:to-blue-600 transition-all duration-500">
-                        <User className="h-12 w-12 text-primary group-hover:text-white transition-colors duration-500 drop-shadow-md" />
-                      </div>
-                      <span className="block text-2xl font-black text-foreground group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-blue-200 transition-all mb-2">Guardian Profile</span>
-                      <span className="text-base font-semibold text-muted-foreground group-hover:text-white/80 transition-colors">Monitor safety telemetry and configure restrictions.</span>
+                    <div className="h-20 w-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 group-hover:bg-primary transition-colors">
+                      <User className="h-10 w-10 text-primary group-hover:text-white transition-colors" />
                     </div>
+                    <h3 className="text-2xl font-display font-bold text-foreground group-hover:text-primary transition-colors mb-2">Guardian Profile</h3>
+                    <p className="text-sm text-muted-foreground">Monitor safety telemetry, connect child accounts, and configure restrictions.</p>
                   </motion.button>
 
+                  {/* Child */}
                   <motion.button
-                    whileHover={{ scale: 1.05, y: -10 }} whileTap={{ scale: 0.95 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => selectRole('child')}
-                    className="group relative overflow-hidden rounded-[3rem] p-10 border border-white/10 text-center transition-all shadow-[0_20px_40px_rgba(0,0,0,0.5)] bg-black/40 backdrop-blur-3xl"
+                    className="group glass-card rounded-3xl p-8 border border-white/5 hover:border-blue-500/50 transition-all flex flex-col items-center text-center"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-br from-[#3b82f6]/20 to-transparent blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-                    <div className="relative z-10 flex flex-col items-center">
-                      <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-[2rem] bg-gradient-to-br from-[#3b82f6]/20 to-[#3b82f6]/5 shadow-inner group-hover:from-[#3b82f6] group-hover:to-cyan-400 transition-all duration-500">
-                        <Baby className="h-12 w-12 text-[#3b82f6] group-hover:text-white transition-colors duration-500 drop-shadow-md" />
-                      </div>
-                      <span className="block text-2xl font-black text-foreground group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-cyan-200 transition-all mb-2">Child Profile</span>
-                      <span className="text-base font-semibold text-muted-foreground group-hover:text-white/80 transition-colors">Operate inside a zero-trust safe scanning zone.</span>
+                    <div className="h-20 w-20 rounded-2xl bg-blue-500/10 flex items-center justify-center mb-6 group-hover:bg-blue-500 transition-colors">
+                      <Baby className="h-10 w-10 text-blue-500 group-hover:text-white transition-colors" />
                     </div>
+                    <h3 className="text-2xl font-display font-bold text-foreground group-hover:text-blue-400 transition-colors mb-2">Protected Child</h3>
+                    <p className="text-sm text-muted-foreground">Operate inside a zero-trust safe scanning zone with automated blocking.</p>
                   </motion.button>
                 </div>
               </motion.div>
             )}
 
-            {/* Step 2 – Parent Detail */}
+            {/* Step 2 Parent */}
             {step === 2 && role === 'parent' && (
-              <motion.div key="step2-parent" variants={fadeVariants} initial="hidden" animate="visible" exit="exit" className="relative z-10">
-                <div className="bg-black/40 backdrop-blur-3xl space-y-8 rounded-[3rem] p-10 lg:p-14 border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.6)]">
-                  <div className="text-center mb-10 border-b border-white/10 pb-8">
-                    <h2 className="text-3xl font-black text-foreground drop-shadow-lg">Guardian Authorization</h2>
-                    <p className="text-base mt-2 font-bold text-primary uppercase tracking-widest">Initialize Admin Access</p>
+              <motion.div key="step2-parent" variants={fadeVariants} initial="hidden" animate="visible" exit="exit" className="max-w-md mx-auto">
+                <div className="glass-card rounded-3xl p-8 border border-white/5">
+                  <div className="text-center mb-8">
+                    <h2 className="text-2xl font-display font-bold text-foreground">Guardian Setup</h2>
+                    <p className="text-sm text-muted-foreground mt-2">Initialize administrator access</p>
                   </div>
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="space-y-2 relative group">
-                      <label className="text-xs font-black text-white/50 uppercase tracking-widest ml-2 group-focus-within:text-primary transition-colors">Administrator Name</label>
-                      <Input value={parentName} onChange={(e) => setParentName(e.target.value)} placeholder="Enter full name" required className="h-16 rounded-2xl bg-white/5 border-white/10 focus-visible:ring-primary focus-visible:border-primary shadow-inner font-bold text-lg px-6 placeholder:text-muted-foreground/50 transition-all" />
+                  <form onSubmit={handleSubmit} className="space-y-5">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Administrator Name</label>
+                      <input
+                        value={parentName}
+                        onChange={e => setParentName(e.target.value)}
+                        required
+                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-foreground focus:outline-none focus:border-primary/50 transition-colors"
+                      />
                     </div>
-                    <div className="space-y-2 relative group">
-                      <label className="text-xs font-black text-white/50 uppercase tracking-widest ml-2 group-focus-within:text-primary transition-colors">Linked Child (Optional)</label>
-                      <Input value={childName} onChange={(e) => setChildName(e.target.value)} placeholder="Child's identifier" className="h-16 rounded-2xl bg-white/5 border-white/10 focus-visible:ring-primary focus-visible:border-primary shadow-inner font-bold text-lg px-6 placeholder:text-muted-foreground/50 transition-all" />
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Child ID (Optional)</label>
+                      <input
+                        value={childName}
+                        onChange={e => setChildName(e.target.value)}
+                        placeholder="Link later if preferred"
+                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-foreground focus:outline-none focus:border-primary/50 transition-colors"
+                      />
                     </div>
-                    <div className="flex gap-4 pt-10 border-t border-white/5">
-                      <Button type="button" variant="outline" onClick={() => setStep(1)} size="lg" className="rounded-2xl h-16 px-8 text-white/70 font-bold bg-white/5 border-white/10 hover:bg-white/10 hover:text-white hover:border-white/20 transition-all">
-                        <ArrowLeft className="h-5 w-5 mr-3" /> Abort
-                      </Button>
-                      <Button disabled={submitting} type="submit" size="lg" className="flex-1 rounded-2xl h-16 font-black text-lg shadow-[0_0_30px_rgba(59,130,246,0.5)] hover:shadow-[0_0_50px_rgba(59,130,246,0.7)] hover:scale-[1.02] bg-gradient-to-r from-primary to-[#3b82f6] border-0 text-white transition-all overflow-hidden relative group">
-                        <div className="absolute inset-0 w-1/4 h-full bg-white/20 skew-x-[30deg] -translate-x-[200%] group-hover:translate-x-[300%] transition-transform duration-700 ease-in-out"></div>
-                        {submitting ? 'Authenticating...' : <>Grant Access <ArrowRight className="h-5 w-5 ml-3" /></>}
-                      </Button>
+                    <div className="flex gap-3 pt-4">
+                      <button type="button" onClick={() => setStep(1)} className="px-6 py-3 rounded-xl font-bold border border-white/10 hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2">
+                        <ArrowLeft className="h-4 w-4" /> Back
+                      </button>
+                      <button disabled={submitting} type="submit" className="flex-1 py-3 rounded-xl font-bold text-white btn-primary btn-shine flex items-center justify-center gap-2 disabled:opacity-50">
+                        {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <>Grant Access <ArrowRight className="h-4 w-4" /></>}
+                      </button>
                     </div>
                   </form>
                 </div>
               </motion.div>
             )}
 
-            {/* Step 2 – Child Verification */}
+            {/* Step 2 Child */}
             {step === 2 && role === 'child' && (
-              <motion.div key="step2-child" variants={fadeVariants} initial="hidden" animate="visible" exit="exit" className="relative z-10">
-                <div className="bg-black/40 backdrop-blur-3xl rounded-[3rem] p-10 border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.6)] relative overflow-hidden">
-                  <div className="absolute top-0 right-0 p-10 opacity-[0.03] pointer-events-none scale-150 transform translate-x-1/4 -translate-y-1/4">
-                    <ShieldCheck className="w-64 h-64 text-[#3b82f6]" />
-                  </div>
-
-                  <div className="relative z-10">
-                    <div className="text-center mb-10 border-b border-white/10 pb-8 flex flex-col items-center">
-                      <div className="p-4 bg-[#3b82f6]/10 rounded-2xl mb-4 border border-[#3b82f6]/20">
-                        <ShieldCheck className="w-10 h-10 text-[#3b82f6]" />
-                      </div>
-                      <h2 className="text-3xl font-black text-foreground drop-shadow-lg">
-                        Secure Connection Protocol
-                      </h2>
-                      <p className="text-base mt-2 font-bold text-[#3b82f6] uppercase tracking-widest">Verify safe tunnel identity</p>
+              <motion.div key="step2-child" variants={fadeVariants} initial="hidden" animate="visible" exit="exit" className="max-w-md mx-auto">
+                <div className="glass-card rounded-3xl p-8 border border-white/5">
+                  <div className="text-center mb-8">
+                    <div className="mx-auto h-16 w-16 bg-blue-500/10 rounded-2xl flex items-center justify-center mb-4 border border-blue-500/20">
+                      <ShieldCheck className="h-8 w-8 text-blue-500" />
                     </div>
-
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                      <div className="space-y-2 relative group">
-                        <label className="text-xs font-black text-white/50 uppercase tracking-widest ml-2 group-focus-within:text-[#3b82f6] transition-colors">Your Assigned Name</label>
-                        <Input disabled={submitting || success} value={kidName} onChange={(e) => setKidName(e.target.value)} placeholder="Enter unique ID..." required className="h-16 rounded-2xl bg-white/5 border-white/10 focus-visible:ring-[#3b82f6] shadow-inner font-bold text-lg px-6 placeholder:text-muted-foreground/50 transition-all" />
-                      </div>
-
-                      <AnimatePresence>
-                        {success && (
-                          <motion.div initial={{ opacity: 0, height: 0, scale: 0.9 }} animate={{ opacity: 1, height: 'auto', scale: 1, marginTop: 24 }} className="rounded-2xl bg-safe/10 border border-safe/30 p-5 flex items-center justify-center gap-4 text-safe font-black shadow-[0_0_20px_rgba(34,197,94,0.3)]">
-                            <CheckCircle2 className="w-8 h-8" /> Connection Verified & Encrypted
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-
-                      <div className="flex gap-4 pt-10 border-t border-white/5">
-                        <Button disabled={submitting || success} type="button" variant="outline" onClick={() => setStep(1)} size="lg" className="rounded-2xl h-16 px-8 text-white/70 font-bold bg-white/5 border-white/10 hover:bg-white/10 hover:text-white hover:border-white/20 transition-all">
-                          <ArrowLeft className="h-5 w-5 mr-3" /> Cancel
-                        </Button>
-                        <Button disabled={submitting || success} type="submit" size="lg" className="flex-1 rounded-2xl h-16 font-black text-lg shadow-[0_0_30px_rgba(59,130,246,0.3)] hover:shadow-[0_0_50px_rgba(59,130,246,0.5)] bg-[#3b82f6] hover:bg-blue-500 border-0 text-white transition-all overflow-hidden relative group">
-                          {submitting && !success ? (
-                            <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }} className="w-6 h-6 border-[3px] border-white/30 border-t-white rounded-full mx-auto shadow-[0_0_15px_rgba(255,255,255,0.5)]" />
-                          ) : success ? (
-                            <span className="animate-pulse">Locking Tunnel...</span>
-                          ) : (
-                            <>Initialize Tunnel <ArrowRight className="h-5 w-5 ml-3" /></>
-                          )}
-                        </Button>
-                      </div>
-                    </form>
+                    <h2 className="text-2xl font-display font-bold text-foreground">Secure Connection</h2>
+                    <p className="text-sm text-muted-foreground mt-2">Initialize safe tunnel identity</p>
                   </div>
+                  <form onSubmit={handleSubmit} className="space-y-5">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Assigned Name</label>
+                      <input
+                        value={kidName}
+                        onChange={e => setKidName(e.target.value)}
+                        required
+                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-foreground focus:outline-none focus:border-blue-500/50 transition-colors"
+                      />
+                    </div>
+                    
+                    <AnimatePresence>
+                      {success && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="flex items-center gap-3 p-4 rounded-xl bg-emerald-500/15 border border-emerald-500/20 text-emerald-400 font-bold text-sm">
+                          <CheckCircle2 className="h-5 w-5" /> Verified & Encrypted
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    <div className="flex gap-3 pt-4">
+                      <button disabled={submitting || success} type="button" onClick={() => setStep(1)} className="px-6 py-3 rounded-xl font-bold border border-white/10 hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2">
+                        <ArrowLeft className="h-4 w-4" /> Back
+                      </button>
+                      <button disabled={submitting || success} type="submit" className="flex-1 py-3 rounded-xl font-bold text-white bg-blue-500 hover:bg-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.3)] flex items-center justify-center gap-2 disabled:opacity-50 transition-all">
+                        {submitting && !success ? <Loader2 className="h-5 w-5 animate-spin" /> : success ? 'Locking...' : <>Initialize <ArrowRight className="h-4 w-4" /></>}
+                      </button>
+                    </div>
+                  </form>
                 </div>
               </motion.div>
             )}
 
-            {/* Step 3 – Success */}
+            {/* Step 3 Success */}
             {step === 3 && (
-              <motion.div key="step3" variants={fadeVariants} initial="hidden" animate="visible" exit="exit" className="relative z-10 w-full">
-                <div className="bg-black/60 backdrop-blur-3xl mx-auto rounded-[3rem] p-14 lg:p-20 border border-safe/30 shadow-[0_30px_100px_rgba(34,197,94,0.2)] text-center relative overflow-hidden flex flex-col items-center">
-
-                  {/* Expanding success ripple */}
-                  <motion.div initial={{ scale: 0, opacity: 0.8 }} animate={{ scale: 4, opacity: 0 }} transition={{ duration: 1.5, ease: "easeOut" }} className="absolute bg-safe/20 rounded-full w-40 h-40 pointer-events-none" />
-
-                  <motion.div
-                    initial={{ scale: 0, rotate: -45 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: "spring", delay: 0.1, bounce: 0.5 }}
-                    className="mb-8 flex h-32 w-32 items-center justify-center rounded-[2.5rem] bg-gradient-to-br from-safe/30 to-safe/10 border border-safe/40 shadow-[0_0_50px_rgba(34,197,94,0.4)]"
-                  >
-                    <CheckCircle2 className="h-16 w-16 text-safe" />
-                  </motion.div>
-
-                  <h2 className="mb-4 text-5xl font-black text-white drop-shadow-md">Session Locked</h2>
-                  <p className="mb-12 text-xl font-medium text-safe/80 uppercase tracking-widest">Dashboard capabilities online.</p>
-
-                  <div className="space-y-6 w-full max-w-md">
-                    {role === 'parent' ? (
-                      <>
-                        <Button onClick={() => navigate('/parent-dashboard')} size="lg" className="w-full h-16 gap-3 rounded-2xl font-black shadow-[0_0_40px_rgba(34,197,94,0.5)] hover:shadow-[0_0_60px_rgba(34,197,94,0.7)] transition-all hover:scale-[1.03] bg-gradient-to-r from-emerald-500 to-emerald-400 text-white text-xl border-0 overflow-hidden relative group">
-                          <div className="absolute inset-0 w-1/4 h-full bg-white/30 skew-x-[30deg] -translate-x-[200%] group-hover:translate-x-[300%] transition-transform duration-700 ease-in-out"></div>
-                          <ShieldCheck className="h-6 w-6" /> Access Guardian Panel
-                        </Button>
-                        <Button variant="outline" onClick={() => navigate('/scanner')} size="lg" className="w-full h-14 gap-2 rounded-2xl font-bold bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/30 text-white/80 hover:text-white transition-all">
-                          <ArrowLeft className="h-5 w-5" /> Return to Scanner
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        <Button onClick={() => navigate('/child-dashboard')} size="lg" className="w-full h-16 gap-3 rounded-2xl font-black shadow-[0_0_40px_rgba(59,130,246,0.5)] hover:shadow-[0_0_60px_rgba(59,130,246,0.7)] transition-all hover:scale-[1.03] bg-gradient-to-r from-blue-500 to-cyan-400 text-white text-xl border-0 overflow-hidden relative group">
-                          <div className="absolute inset-0 w-1/4 h-full bg-white/30 skew-x-[30deg] -translate-x-[200%] group-hover:translate-x-[300%] transition-transform duration-700 ease-in-out"></div>
-                          <Baby className="h-6 w-6" /> Load Protected View
-                        </Button>
-                        <Button variant="outline" onClick={() => navigate('/scanner')} size="lg" className="w-full h-14 gap-2 rounded-2xl font-bold bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/30 text-white/80 hover:text-white transition-all">
-                          <ArrowLeft className="h-5 w-5" /> Return to Scanner
-                        </Button>
-                      </>
-                    )}
+              <motion.div key="step3" variants={fadeVariants} initial="hidden" animate="visible" exit="exit" className="max-w-md mx-auto">
+                <div className="glass-card rounded-3xl p-10 border border-emerald-500/20 bg-emerald-500/5 text-center">
+                  <div className="mx-auto h-24 w-24 rounded-full bg-emerald-500/20 flex items-center justify-center mb-6 border border-emerald-500/30">
+                    <CheckCircle2 className="h-12 w-12 text-emerald-400" />
+                  </div>
+                  <h2 className="text-3xl font-display font-bold text-foreground mb-2">Session Locked</h2>
+                  <p className="text-sm font-bold text-emerald-400/80 uppercase tracking-widest mb-8">Capabilities Online</p>
+                  
+                  <div className="space-y-3">
+                    <button
+                      onClick={() => navigate(role === 'parent' ? '/parent-dashboard' : '/child-dashboard')}
+                      className={`w-full py-4 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all ${
+                        role === 'parent' 
+                          ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:scale-[1.02]' 
+                          : 'bg-gradient-to-r from-blue-600 to-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:scale-[1.02]'
+                      }`}
+                    >
+                      {role === 'parent' ? <><ShieldCheck className="h-5 w-5" /> Go to Dashboard</> : <><Baby className="h-5 w-5" /> Start Protected View</>}
+                    </button>
+                    <button
+                      onClick={() => navigate('/scanner')}
+                      className="w-full py-4 rounded-xl font-bold border border-white/10 hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-2"
+                    >
+                      Return to Scanner
+                    </button>
                   </div>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
-      </section >
-    </div >
+      </section>
+    </div>
   );
 };
 

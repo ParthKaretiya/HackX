@@ -1,219 +1,230 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 215 25% 15%;
+    /* Apple / Minimalist Light Mode */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 9%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
+    --card-foreground: 0 0% 9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
+    --popover-foreground: 0 0% 9%;
 
-    --primary: 190 80% 42%;
-    --primary-foreground: 0 0% 100%;
+    /* Sleek dark primary (like Apple black or ChatGPT deep gray) */
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
 
-    --secondary: 210 25% 95%;
-    --secondary-foreground: 215 25% 15%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 9%;
 
-    --muted: 210 20% 96%;
-    --muted-foreground: 215 15% 50%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
 
-    --accent: 190 60% 94%;
-    --accent-foreground: 190 80% 30%;
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 9%;
 
-    --destructive: 0 72% 51%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;
-    --warning-foreground: 38 100% 15%;
-
-    --safe: 170 60% 45%;
+    --safe: 142 71% 45%;
     --safe-foreground: 0 0% 100%;
 
-    --suspicious: 38 92% 50%;
-    --suspicious-foreground: 38 100% 15%;
-
-    --dangerous: 0 72% 51%;
+    --dangerous: 0 84% 60%;
     --dangerous-foreground: 0 0% 100%;
 
-    --info-safe: 170 50% 92%;
-    --info-safe-foreground: 170 60% 30%;
-
-    --info-unverified: 220 15% 90%;
-    --info-unverified-foreground: 220 10% 40%;
-
-    --info-risk: 0 60% 93%;
-    --info-risk-foreground: 0 60% 40%;
-
-    --border: 214 20% 90%;
-    --input: 214 20% 90%;
-    --ring: 190 80% 42%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 0 0% 9%;
 
     --radius: 0.75rem;
-
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
-    --background: 215 25% 8%;
-    --foreground: 210 20% 95%;
-    --card: 215 25% 12%;
-    --card-foreground: 210 20% 95%;
-    --popover: 215 25% 12%;
-    --popover-foreground: 210 20% 95%;
-    --primary: 190 80% 50%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 215 20% 18%;
-    --secondary-foreground: 210 20% 95%;
-    --muted: 215 20% 18%;
-    --muted-foreground: 215 15% 60%;
-    --accent: 190 40% 18%;
-    --accent-foreground: 190 80% 70%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 215 20% 20%;
-    --input: 215 20% 20%;
-    --ring: 190 80% 50%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Apple / ChatGPT True Dark Mode */
+    --background: 0 0% 0%;
+    --foreground: 0 0% 98%;
+
+    /* Slightly elevated cards */
+    --card: 0 0% 4%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 0 0% 4%;
+    --popover-foreground: 0 0% 98%;
+
+    /* Stark white primary button */
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 0%;
+
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 60%;
+
+    --accent: 0 0% 10%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 98%;
+
+    --safe: 142 71% 45%;
+    --safe-foreground: 0 0% 100%;
+
+    --dangerous: 0 84% 60%;
+    --dangerous-foreground: 0 0% 100%;
+
+    --border: 0 0% 15%;
+    --input: 0 0% 15%;
+    --ring: 0 0% 98%;
   }
 
   * {
     @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    box-sizing: border-box;
   }
 
-  .mesh-bg {
-    background-color: hsl(var(--background));
-    background-image: 
-      radial-gradient(at 0% 0%, hsla(190, 80%, 50%, 0.1) 0px, transparent 50%),
-      radial-gradient(at 50% 0%, hsla(210, 80%, 50%, 0.1) 0px, transparent 50%),
-      radial-gradient(at 100% 0%, hsla(230, 80%, 50%, 0.1) 0px, transparent 50%);
-  }
-
-  .glass-card {
-    @apply bg-white/10 backdrop-blur-md border border-white/20 shadow-xl;
-  }
-
-  .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-blue-500 to-indigo-600;
-  }
-}
-
-@layer base {
-  * {
-    @apply border-border;
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
+    overflow-x: hidden;
+  }
+
+  /* Typography refinements */
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    letter-spacing: -0.03em;
   }
 }
 
-@layer utilities {
-  .text-gradient {
-    @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, hsl(190 80% 42%), hsl(200 70% 50%));
-  }
-
-  .glass-card {
-    @apply bg-card/80 backdrop-blur-md border border-border/50 shadow-lg;
-  }
-
-  .scan-pulse {
-    animation: scanPulse 2s ease-in-out infinite;
-  }
+/* ============================================================
+   CUSTOM SCROLLBAR (Minimal)
+   ============================================================ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
 }
 
-@keyframes scanPulse {
-  0%, 100% {
-    box-shadow: 0 0 0 0 hsl(190 80% 42% / 0.3);
-  }
-  50% {
-    box-shadow: 0 0 0 12px hsl(190 80% 42% / 0);
-  }
+/* ============================================================
+   APPLE/CHATGPT STYLE FROSTED GLASS
+   ============================================================ */
+.glass {
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.glass-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(40px) saturate(1.5);
+  -webkit-backdrop-filter: blur(40px) saturate(1.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+  border-radius: 1.5rem;
+  transition: border-color 0.3s ease, background 0.3s ease;
 }
 
-@keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-  100% { transform: translateY(0px); }
+.glass-nav {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(20px) saturate(1.5);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-@keyframes pulseGlow {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; transform: scale(1.05); }
+.light .glass {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+.light .glass-card {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+}
+.light .glass-nav {
+  background: rgba(255, 255, 255, 0.8);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-.animate-fade-in-up {
-  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+/* ============================================================
+   CHATGPT STYLE PROMPT INPUT BAR
+   ============================================================ */
+.prompt-bar {
+  background: hsl(var(--secondary));
+  border: 1px solid hsl(var(--border));
+  border-radius: 1.5rem;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.prompt-bar:focus-within {
+  border-color: hsl(var(--ring) / 0.5);
+  box-shadow: 0 12px 48px rgba(0,0,0,0.2);
 }
 
-.animate-fade-in-up-delay-1 {
-  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
-  opacity: 0;
+/* ============================================================
+   BUTTONS (Minimalist Apple Style)
+   ============================================================ */
+.btn-primary {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border-radius: 999px;
+  font-weight: 500;
+  transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
-.animate-fade-in-up-delay-2 {
-  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
-  opacity: 0;
+.btn-primary:hover {
+  opacity: 0.9;
+  transform: scale(1.02);
 }
 
-.animate-fade-in-up-delay-3 {
-  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
-  opacity: 0;
+.btn-primary:active {
+  transform: scale(0.98);
 }
 
-.animate-float {
-  animation: float 4s ease-in-out infinite;
+.btn-secondary {
+  background: hsl(var(--secondary));
+  color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: 999px;
+  font-weight: 500;
+  transition: background 0.2s ease;
 }
 
-.glass-panel {
-  @apply bg-background/60 backdrop-blur-xl border border-white/10 dark:border-white/5 shadow-2xl;
+.btn-secondary:hover {
+  background: hsl(var(--muted));
 }
 
-.neon-glow {
-  box-shadow: 0 0 20px hsl(var(--primary) / 0.3), inset 0 0 10px hsl(var(--primary) / 0.1);
+/* ============================================================
+   PAGE TRANSITIONS & MISC
+   ============================================================ */
+.page-enter {
+  animation: fade-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.mesh-bg {
-  background-color: hsl(var(--background));
-  background-image: 
-    radial-gradient(at 40% 20%, hsla(190, 80%, 42%, 0.15) 0px, transparent 50%),
-    radial-gradient(at 80% 0%, hsla(220, 80%, 50%, 0.15) 0px, transparent 50%),
-    radial-gradient(at 0% 50%, hsla(200, 70%, 50%, 0.1) 0px, transparent 50%);
+*:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+::selection {
+  background: hsl(var(--foreground));
+  color: hsl(var(--background));
 }

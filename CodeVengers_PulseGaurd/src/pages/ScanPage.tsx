@@ -1,249 +1,452 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import Navbar from "@/components/Navbar";
-import ScanFormLink from "@/components/ScanFormLink";
-import ScanFormText from "@/components/ScanFormText";
-import ScanResult from "@/components/ScanResult";
-import HistoryList from "@/components/HistoryList";
+import { scanLink, scanContent, checkFileScan } from "@/services/api";
 import { ScanResultData } from "@/types/scan";
-import {
-  scanLink,
-  scanContent,
-  checkFileScan,
-  mockRecentScans,
-} from "@/services/api";
-import { History, ScanSearch, ShieldCheck, QrCode, FileText, Globe } from "lucide-react";
-import { Link } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
-import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
-import ParticleBackground from "@/components/ParticleBackground";
-import { QRScanner } from "@/components/QRScanner";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  ArrowRight, 
+  Link2, 
+  FileText, 
+  Image as ImageIcon, 
+  Loader2, 
+  ShieldCheck, 
+  AlertTriangle, 
+  Info, 
+  Bot, 
+  Sparkles, 
+  ShieldAlert, 
+  HelpCircle,
+  RefreshCw
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+
+type ScanTab = 'link' | 'text' | 'image';
+
+const SUGGESTIONS = [
+  {
+    title: "Verify Banking Link",
+    titleHi: "बैंकिंग लिंक सत्यापित करें",
+    subtitle: "Check phishing domain",
+    subtitleHi: "फ़िशिंग डोमेन जांचें",
+    text: "https://secure-hdfc-banking-login.net/verify",
+    tab: "link" as const
+  },
+  {
+    title: "Analyze Urgent SMS",
+    titleHi: "तत्काल एसएमएस का विश्लेषण करें",
+    subtitle: "Check lottery card fraud",
+    subtitleHi: "लॉटरी कार्ड धोखाधड़ी जांचें",
+    text: "URGENT: Your SBI net banking account will be suspended in 2 hours due to KYC mismatch. Update now at: https://sbi-kyc-update.org",
+    tab: "text" as const
+  },
+  {
+    title: "Inspect Promo Claim",
+    titleHi: "प्रोमो दावे का निरीक्षण करें",
+    subtitle: "Check voucher fraud",
+    subtitleHi: "वाउचर धोखाधड़ी जांचें",
+    text: "Congratulations! You have been selected to win a free iPhone 15 Pro. Claim your prize immediately at http://free-prize-claims.xyz/iphone",
+    tab: "text" as const
+  }
+];
 
 const ScanPage = () => {
+  const location = useLocation();
+  const { t, i18n } = useTranslation();
+  const isHi = i18n.language === 'hi';
+
+  const [activeTab, setActiveTab] = useState<ScanTab>('link');
+  const [inputStr, setInputStr] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
-  const [currentResult, setCurrentResult] = useState<ScanResultData | null>(null);
-  const [recentScans, setRecentScans] = useState<ScanResultData[]>(mockRecentScans);
+  const [loadingStep, setLoadingStep] = useState(0);
+  const [result, setResult] = useState<ScanResultData | null>(null);
+  
+  const fileRef = useRef<HTMLInputElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
-  const { user } = useAuth();
 
-  const { scrollYProgress } = useScroll();
-  const yParallax = useTransform(scrollYProgress, [0, 1], [0, -150]);
-
-  const addToHistory = useCallback((result: ScanResultData) => {
-    setRecentScans((prev) => [result, ...prev].slice(0, 20));
-    const key = "pulseguard_scans";
-    const existing = JSON.parse(localStorage.getItem(key) || "[]") as Array<{
-      uid: string;
-      content: string;
-      result: ScanResultData;
-      timestamp: string;
-    }>;
-    if (user?.uid) {
-      const entry = { uid: user.uid, content: result.input, result, timestamp: new Date().toISOString() };
-      localStorage.setItem(key, JSON.stringify([entry, ...existing].slice(0, 200)));
+  // Rotate loading steps for visual realism
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (loading) {
+      setLoadingStep(0);
+      interval = setInterval(() => {
+        setLoadingStep((prev) => (prev + 1) % 4);
+      }, 700);
     }
-  }, [user?.uid]);
+    return () => clearInterval(interval);
+  }, [loading]);
 
-  const saveScan = async (_content: string, _result: ScanResultData) => { };
+  const loadingMessages = [
+    t('scan_analyzing', "Analyzing content..."),
+    isHi ? "शीर्षलेखों और यूआरएल संरचना की जांच की जा रही है..." : "Inspecting headers and URL structure...",
+    isHi ? "वैश्विक थ्रेट डेटाबेस के विरुद्ध क्रॉस-चेक किया जा रहा है..." : "Cross-checking against global threat databases...",
+    isHi ? "एआई हेयुरिस्टिक्स एल्गोरिदम चलाए जा रहे हैं..." : "Running AI heuristics algorithms..."
+  ];
 
-  const executeScan = async (action: () => Promise<ScanResultData>, actionType: string, input: string) => {
+  useEffect(() => {
+    if (location.state && location.state.initialUrl) {
+      setInputStr(location.state.initialUrl);
+      setActiveTab('link');
+      handleScan(location.state.initialUrl, 'link');
+      // Clear state so it doesn't loop
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
+
+  const handleScan = async (input: string, type: ScanTab, file?: File | null) => {
+    if (!input.trim() && !file) return;
+    
     setLoading(true);
-    setCurrentResult(null);
+    setResult(null);
     try {
-      const result = await action();
-      setCurrentResult(result);
-      addToHistory(result);
-      await saveScan(actionType === 'image' ? '[News Screenshot]' : input, result);
-      setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 300);
+      let res;
+      if (type === 'link') {
+        res = await scanLink(input);
+      } else if (type === 'text') {
+        res = await scanContent(input);
+      } else if (type === 'image' && file) {
+        res = await checkFileScan(file);
+      }
+      if (res) setResult(res);
+    } catch (err) {
+      // Fallback
+      setResult({
+        id: crypto.randomUUID(),
+        safetyCategory: 'SUSPICIOUS',
+        truthCategory: 'UNVERIFIED',
+        topic: 'general',
+        type: type === 'link' ? 'link' : 'text',
+        reasons: [
+          isHi ? "विश्लेषण सर्वर से संपर्क नहीं हो सका।" : "Backend analysis server could not be reached.",
+          isHi ? "यह एक डेमो सिमुलेशन परिणाम है।" : "This is a simulated demo result."
+        ],
+        recommendation: isHi ? "कृपया सुनिश्चित करें कि आपका बैकएंड सर्वर पोर्ट 5000 पर चल रहा है।" : "Please ensure your backend server is running on localhost:5000.",
+        input: file ? `[Image: ${file.name}]` : input.substring(0, 100),
+        timestamp: new Date(),
+      });
     } finally {
       setLoading(false);
+      setTimeout(() => resultRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
     }
   };
 
-  const handleScanLink = (url: string) => executeScan(() => scanLink(url), 'link', url);
-  const handleScanText = (text: string) => executeScan(() => scanContent(text), 'text', text);
-  const handleScanImage = (file: File) => executeScan(() => checkFileScan(file), 'image', '[Image]');
-
-  const handleSelectScan = (scan: ScanResultData) => {
-    setCurrentResult(scan);
-    setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 300);
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleScan(inputStr, activeTab, imageFile);
   };
 
-  const containerVariants: any = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      setInputStr(file.name);
+    }
   };
 
-  const itemVariants: any = {
-    hidden: { opacity: 0, y: 30, scale: 0.95 },
-    visible: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring', stiffness: 200, damping: 20 } }
+  const triggerSuggestion = (s: typeof SUGGESTIONS[0]) => {
+    setActiveTab(s.tab);
+    setInputStr(s.text);
+    setImageFile(null);
+    handleScan(s.text, s.tab);
+  };
+
+  const clearScanner = () => {
+    setInputStr('');
+    setImageFile(null);
+    setResult(null);
   };
 
   return (
-    <div className="min-h-screen bg-background relative overflow-x-hidden mesh-bg">
-      <ParticleBackground />
-      <motion.div style={{ y: yParallax }} className="absolute top-0 right-0 w-[800px] h-[800px] bg-primary/20 blur-[150px] rounded-full mix-blend-screen pointer-events-none" />
-      <motion.div style={{ y: yParallax }} className="absolute bottom-1/4 left-0 w-[600px] h-[600px] bg-[#3b82f6]/20 blur-[150px] rounded-full mix-blend-screen pointer-events-none" />
-
+    <div className="min-h-screen relative overflow-x-hidden flex flex-col bg-background selection:bg-primary selection:text-background">
       <Navbar />
 
-      {/* Scanner header */}
-      <section className="pt-24 pb-16 relative z-10 w-full flex flex-col items-center">
-        <motion.div initial="hidden" animate="visible" variants={containerVariants} className="container mx-auto px-4 text-center">
-          <motion.div variants={itemVariants} className="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-[2.5rem] bg-gradient-to-br from-primary to-[#3b82f6] shadow-[0_0_50px_rgba(59,130,246,0.5)] transform hover:scale-110 transition-transform duration-500">
-            <ScanSearch className="h-12 w-12 text-white animate-pulse" />
-          </motion.div>
-          <motion.h1 variants={itemVariants} className="mb-4 text-4xl font-black tracking-tight text-foreground md:text-5xl lg:text-6xl drop-shadow-xl text-gradient">
-            Universal Intelligence Core
-          </motion.h1>
-          <motion.p variants={itemVariants} className="mx-auto max-w-2xl text-xl text-muted-foreground font-medium drop-shadow-sm">
-            Deploy deep-layer neural analysis on any URL, message, or screenshot. Extract the truth instantaneously.
-          </motion.p>
-        </motion.div>
-      </section>
+      {/* Decorative premium background light blobs */}
+      <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-blue-500/5 dark:bg-blue-500/10 rounded-full blur-[100px] pointer-events-none -z-10" />
+      <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-cyan-500/5 dark:bg-cyan-500/10 rounded-full blur-[130px] pointer-events-none -z-10" />
 
-      {/* Scanner cards */}
-      <section className="pb-24 relative z-20">
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={containerVariants}
-          className="container mx-auto px-4 max-w-4xl relative z-20"
-        >
-          <Tabs defaultValue="link" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 h-16 rounded-[2rem] bg-black/20 backdrop-blur-3xl border border-white/10 p-2 mb-10">
-              <TabsTrigger value="link" className="rounded-full flex items-center gap-2 font-bold data-[state=active]:bg-primary data-[state=active]:text-white">
-                <Globe className="h-4 w-4" /> URL Link
-              </TabsTrigger>
-              <TabsTrigger value="text" className="rounded-full flex items-center gap-2 font-bold data-[state=active]:bg-primary data-[state=active]:text-white">
-                <FileText className="h-4 w-4" /> Message Text
-              </TabsTrigger>
-              <TabsTrigger value="qr" className="rounded-full flex items-center gap-2 font-bold data-[state=active]:bg-primary data-[state=active]:text-white">
-                <QrCode className="h-4 w-4" /> QR Code
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="link">
-              <div className="glass-panel p-10 rounded-[3rem] border border-white/10 shadow-2xl relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:scale-110 transition-transform duration-700">
-                  <Globe className="w-32 h-32" />
-                </div>
-                <h2 className="text-2xl font-black mb-8 flex items-center gap-3">
-                  <span className="p-2 bg-primary/20 rounded-xl"><Globe className="h-6 w-6 text-primary" /></span>
-                  URL Analysis
-                </h2>
-                <ScanFormLink onScan={handleScanLink} loading={loading} />
+      <main className="flex-1 container mx-auto px-6 pt-28 pb-16 max-w-4xl flex flex-col justify-center">
+        
+        {/* Banner header if no result yet */}
+        <AnimatePresence mode="wait">
+          {!result && !loading && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              className="flex flex-col items-center text-center mb-10"
+            >
+              <div className="h-16 w-16 bg-gradient-to-tr from-blue-500 to-cyan-400 rounded-2xl flex items-center justify-center mb-6 border border-white/20 shadow-lg shadow-blue-500/10 dark:shadow-blue-500/20">
+                <Bot className="h-8 w-8 text-white animate-pulse" />
               </div>
-            </TabsContent>
+              <h1 className="text-4xl md:text-5xl font-display font-bold mb-4 tracking-tight leading-none">
+                {t('scan_help')}
+              </h1>
+              <p className="text-muted-foreground text-[15px] max-w-md font-medium">
+                {t('scan_desc')}
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-            <TabsContent value="text">
-              <div className="glass-panel p-10 rounded-[3rem] border border-white/10 shadow-2xl relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:scale-110 transition-transform duration-700">
-                  <FileText className="w-32 h-32" />
-                </div>
-                <h2 className="text-2xl font-black mb-8 flex items-center gap-3">
-                  <span className="p-2 bg-primary/20 rounded-xl"><FileText className="h-6 w-6 text-primary" /></span>
-                  Message Scrutiny
-                </h2>
-                <ScanFormText onScan={handleScanText} onScanImage={handleScanImage} loading={loading} />
-              </div>
-            </TabsContent>
-
-            <TabsContent value="qr">
-              <div className="glass-panel p-10 rounded-[3rem] border border-white/10 shadow-2xl relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:scale-110 transition-transform duration-700">
-                  <QrCode className="w-32 h-32" />
-                </div>
-                <h2 className="text-2xl font-black mb-8 flex items-center gap-3">
-                  <span className="p-2 bg-primary/20 rounded-xl"><QrCode className="h-6 w-6 text-primary" /></span>
-                  QR Decryption
-                </h2>
-                <QRScanner onScan={handleScanLink} />
-              </div>
-            </TabsContent>
-          </Tabs>
-        </motion.div>
-      </section>
-
-      {/* Result */}
-      <AnimatePresence mode="wait">
-        {currentResult && (
-          <motion.section
-            key={currentResult.id}
-            ref={resultRef}
-            initial={{ opacity: 0, scale: 0.9, y: 50, filter: "blur(10px)" }}
-            animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
-            exit={{ opacity: 0, scale: 0.9, filter: "blur(10px)" }}
-            transition={{ type: "spring", stiffness: 200, damping: 20 }}
-            className="pb-24 relative z-30"
-          >
-            <div className="container mx-auto max-w-5xl px-4 relative">
-              <div className="absolute -inset-1 bg-gradient-to-r from-primary to-[#3b82f6] rounded-[3rem] blur-2xl opacity-20" />
-              <div className="relative bg-background/50 backdrop-blur-3xl p-8 rounded-[3rem] border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
-                <div className="flex items-center gap-4 mb-8 border-b border-white/10 pb-6">
-                  <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center shadow-lg">
-                    <ShieldCheck className="h-8 w-8 text-white" />
+        {/* Suggestion Cards */}
+        <AnimatePresence>
+          {!result && !loading && (
+            <motion.div 
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+              className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8"
+            >
+              {SUGGESTIONS.map((s, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => triggerSuggestion(s)}
+                  className="flex flex-col text-left p-5 rounded-2xl bg-secondary/30 border border-border/60 hover:bg-secondary/60 hover:border-border/100 hover:scale-[1.02] transition-all duration-300 group shadow-sm"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sparkles className="w-4 h-4 text-blue-500 group-hover:animate-bounce-subtle" />
+                    <span className="font-bold text-foreground text-sm tracking-tight">
+                      {isHi ? s.titleHi : s.title}
+                    </span>
                   </div>
-                  <div>
-                    <h2 className="text-3xl font-black tracking-tight text-foreground">Intelligence Report Generaed</h2>
-                    <p className="text-sm font-bold text-primary uppercase tracking-widest mt-1">Status: Analysis Complete</p>
-                  </div>
-                </div>
+                  <span className="text-xs text-muted-foreground font-medium mb-3">
+                    {isHi ? s.subtitleHi : s.subtitle}
+                  </span>
+                  <span className="text-[11px] text-muted-foreground font-mono truncate w-full bg-secondary/80 px-2 py-1 rounded border border-border/40">
+                    {s.text}
+                  </span>
+                </button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-                {/* Risk Meter */}
-                <div className="mb-8 rounded-[2rem] bg-black/40 border border-white/5 p-8 shadow-inner">
-                  {(() => {
-                    const score =
-                      currentResult.safetyCategory === "SAFE" ? 92 : currentResult.safetyCategory === "SUSPICIOUS" ? 55 : 18;
-                    const barColor =
-                      currentResult.safetyCategory === "SAFE" ? "bg-safe shadow-[0_0_20px_rgba(34,197,94,0.6)]" : currentResult.safetyCategory === "SUSPICIOUS" ? "bg-warning shadow-[0_0_20px_rgba(234,179,8,0.6)]" : "bg-dangerous shadow-[0_0_20px_rgba(239,68,68,0.6)]";
-                    return (
-                      <>
-                        <div className="mb-4 flex items-center justify-between text-sm uppercase tracking-widest font-bold">
-                          <span className="text-muted-foreground/80">Threat Probability Index</span>
-                          <span className="text-4xl font-black text-foreground">{score}<span className="text-xl text-muted-foreground">/100</span></span>
-                        </div>
-                        <div className="h-6 w-full overflow-hidden rounded-full bg-secondary/20 shadow-inner">
-                          <motion.div initial={{ width: 0 }} animate={{ width: `\${score}%` }} transition={{ duration: 1.5, type: 'spring', bounce: 0.3 }} className={`h-full rounded-full \${barColor}`} />
-                        </div>
-                      </>
-                    );
-                  })()}
-                </div>
+        {/* Chat input wrapper */}
+        <div className="w-full relative">
+          <div className="bg-background border border-border rounded-[2rem] shadow-[0_8px_40px_rgba(0,0,0,0.03)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.2)] overflow-hidden transition-all duration-300 focus-within:border-primary/30 focus-within:shadow-[0_8px_40px_rgba(0,0,0,0.06)] dark:focus-within:shadow-[0_8px_40px_rgba(0,0,0,0.4)]">
+            
+            {/* Sliding Pill Tabs */}
+            <div className="flex px-3 pt-3 pb-1 bg-secondary/15 gap-1.5 border-b border-border/30">
+              {[
+                { id: 'link', icon: Link2, label: t('scan_url') },
+                { id: 'text', icon: FileText, label: t('scan_text') },
+                { id: 'image', icon: ImageIcon, label: t('scan_image') }
+              ].map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => { setActiveTab(tab.id as ScanTab); setImageFile(null); setInputStr(''); }}
+                    className={`relative px-4 py-2 text-xs font-semibold rounded-xl transition-all duration-300 flex items-center gap-2 overflow-hidden ${
+                      isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="activeTabBackground"
+                        className="absolute inset-0 bg-background border border-border/80 shadow-sm rounded-xl"
+                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                      />
+                    )}
+                    <span className="relative z-10 flex items-center gap-1.5">
+                      <Icon className="w-3.5 h-3.5" />
+                      {tab.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
 
-                <ScanResult result={currentResult} />
+            {/* Input Form */}
+            <form onSubmit={onSubmit} className="p-4 bg-background flex flex-col gap-4">
+              {activeTab === 'image' ? (
+                <div className="flex items-center gap-4 w-full">
+                  <input type="file" accept="image/*" className="hidden" ref={fileRef} onChange={handleImageChange} />
+                  <button 
+                    type="button" 
+                    onClick={() => fileRef.current?.click()} 
+                    className="flex-1 py-6 border border-dashed border-border hover:border-primary/40 rounded-2xl text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary/20 transition-all duration-300 flex flex-col items-center gap-2"
+                  >
+                    <ImageIcon className="w-6 h-6 text-muted-foreground" />
+                    <span>{imageFile ? imageFile.name : t('scan_placeholder_image')}</span>
+                  </button>
+                </div>
+              ) : (
+                <textarea
+                  value={inputStr}
+                  onChange={(e) => setInputStr(e.target.value)}
+                  placeholder={activeTab === 'link' ? t('scan_placeholder_url') : t('scan_placeholder_text')}
+                  className="w-full resize-none outline-none bg-transparent min-h-[70px] text-[15px] text-foreground placeholder:text-muted-foreground p-2 font-medium"
+                  rows={2}
+                />
+              )}
+
+              <div className="flex justify-between items-center pt-2 border-t border-border/20">
+                <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-blue-500" />
+                  {isHi ? "पल्सगार्ड इंजन v2.0" : "PulseGuard Engine V2.0"}
+                </span>
+                
+                <div className="flex items-center gap-2">
+                  {result && (
+                    <button
+                      type="button"
+                      onClick={clearScanner}
+                      className="p-2.5 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                      title={isHi ? "रीसेट करें" : "Reset Scanner"}
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                    </button>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={loading || (!inputStr.trim() && !imageFile)}
+                    className="h-10 w-10 bg-primary text-primary-foreground rounded-full flex items-center justify-center disabled:opacity-25 disabled:cursor-not-allowed hover:scale-105 active:scale-95 transition-all shadow-md"
+                  >
+                    <ArrowRight className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
-            </div>
-          </motion.section>
-        )}
-      </AnimatePresence>
-
-      {/* Recent scans */}
-      <motion.section
-        initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-        transition={{ duration: 0.8 }}
-        className="border-t border-white/10 bg-background/80 backdrop-blur-2xl py-24 relative z-10"
-      >
-        <div className="container mx-auto px-4 max-w-6xl">
-          <div className="mb-10 flex flex-col md:flex-row items-start md:items-end justify-between gap-4">
-            <div>
-              <h2 className="text-3xl font-black tracking-tight text-foreground flex items-center gap-4">
-                <div className="p-3 bg-primary/10 rounded-2xl">
-                  <History className="h-8 w-8 text-primary" />
-                </div>
-                Global Telemetry List
-              </h2>
-              <p className="text-muted-foreground mt-3 font-medium text-lg ml-2">Recent malicious threats and verified platforms intercepted by the engine.</p>
-            </div>
-            <Link to="/history" className="hidden sm:inline-flex items-center justify-center gap-2 text-base font-bold text-white bg-gradient-to-r from-primary to-[#3b82f6] shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:shadow-[0_0_30px_rgba(59,130,246,0.6)] hover:scale-105 transition-all px-8 py-4 rounded-xl">
-              View All Global Logs
-            </Link>
-          </div>
-          <div className="bg-black/20 p-6 md:p-10 rounded-[3rem] border border-white/5 shadow-2xl">
-            <HistoryList scans={recentScans.slice(0, 6)} onSelect={handleSelectScan} compact />
+            </form>
           </div>
         </div>
-      </motion.section>
+
+        {/* Results / Processing Area */}
+        <div ref={resultRef} className="mt-8">
+          <AnimatePresence mode="wait">
+            {loading && (
+              <motion.div
+                key="loading"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.4 }}
+                className="flex gap-5 p-6 md:p-8 rounded-[2rem] bg-secondary/20 border border-border shadow-sm items-center relative overflow-hidden"
+              >
+                {/* Glowing orbit behind */}
+                <div className="absolute top-0 right-0 w-[200px] h-[200px] bg-blue-500/10 rounded-full blur-3xl animate-pulse" />
+                
+                <div className="h-12 w-12 rounded-2xl bg-secondary/80 border border-border flex items-center justify-center shrink-0 shadow-sm relative">
+                  <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+                </div>
+                
+                <div className="space-y-1.5 pt-0.5 z-10">
+                  <motion.p 
+                    key={loadingStep}
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-base font-semibold text-foreground"
+                  >
+                    {loadingMessages[loadingStep]}
+                  </motion.p>
+                  <p className="text-xs text-muted-foreground font-medium">
+                    {t('scan_running_checks')}
+                  </p>
+                </div>
+              </motion.div>
+            )}
+
+            {result && !loading && (
+              <motion.div
+                key="result"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                className="space-y-6"
+              >
+                {/* Colored border shadow logic */}
+                <div className={`flex flex-col md:flex-row gap-6 p-6 md:p-8 rounded-[2rem] border transition-all duration-300 shadow-xl ${
+                  result.safetyCategory === 'SAFE' 
+                    ? 'border-emerald-500/25 bg-emerald-500/[0.02] dark:bg-emerald-500/[0.01] shadow-emerald-500/[0.02]' 
+                    : result.safetyCategory === 'SUSPICIOUS' 
+                    ? 'border-amber-500/25 bg-amber-500/[0.02] dark:bg-amber-500/[0.01] shadow-amber-500/[0.02]' 
+                    : 'border-rose-500/25 bg-rose-500/[0.02] dark:bg-rose-500/[0.01] shadow-rose-500/[0.02]'
+                }`}>
+                  
+                  {/* Status Indicator Icon with glow background */}
+                  <div className={`h-12 w-12 rounded-2xl flex items-center justify-center shrink-0 border shadow-sm ${
+                    result.safetyCategory === 'SAFE' 
+                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' 
+                      : result.safetyCategory === 'SUSPICIOUS' 
+                      ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' 
+                      : 'bg-rose-500/10 border-rose-500/20 text-rose-500'
+                  }`}>
+                    {result.safetyCategory === 'SAFE' ? (
+                      <ShieldCheck className="h-6 w-6 animate-pulse" />
+                    ) : result.safetyCategory === 'SUSPICIOUS' ? (
+                      <HelpCircle className="h-6 w-6" />
+                    ) : (
+                      <ShieldAlert className="h-6 w-6" />
+                    )}
+                  </div>
+                  
+                  <div className="flex-1 space-y-4 pt-1">
+                    <div>
+                      {/* Safety Category Headline badge */}
+                      <span className={`inline-flex px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest rounded-full mb-3 border ${
+                        result.safetyCategory === 'SAFE' 
+                          ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' 
+                          : result.safetyCategory === 'SUSPICIOUS' 
+                          ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' 
+                          : 'bg-rose-500/10 border-rose-500/20 text-rose-500'
+                      }`}>
+                        {result.safetyCategory === 'SAFE' ? t('risk_safe') : 
+                         result.safetyCategory === 'SUSPICIOUS' ? t('risk_suspicious') : 
+                         t('risk_dangerous')}
+                      </span>
+
+                      <h3 className="text-xl font-bold text-foreground mb-2 tracking-tight">
+                        {result.safetyCategory === 'SAFE' ? t('scan_safe_title') : 
+                         result.safetyCategory === 'SUSPICIOUS' ? t('scan_suspicious_title') : 
+                         t('scan_danger_title')}
+                      </h3>
+                      <p className="text-[15px] text-foreground/80 leading-relaxed font-medium">
+                        {result.recommendation}
+                      </p>
+                    </div>
+
+                    {/* Breakdown panel */}
+                    <div className="bg-secondary/25 border border-border/50 rounded-2xl p-5 shadow-inner">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Info className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                          {t('scan_breakdown')}
+                        </span>
+                      </div>
+                      <ul className="space-y-2.5">
+                        {result.reasons.map((reason, idx) => (
+                          <motion.li 
+                            key={idx}
+                            initial={{ opacity: 0, x: -5 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: idx * 0.1 }}
+                            className="text-[14px] text-foreground/80 flex items-start gap-2.5 font-medium"
+                          >
+                            <span className="text-blue-500 mt-1 shrink-0">•</span>
+                            <span>{reason}</span>
+                          </motion.li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div className="text-[11px] text-muted-foreground font-semibold flex items-center gap-2">
+                      <span>{t('scan_scanned_input')}:</span>
+                      <span className="font-mono bg-secondary px-2 py-0.5 rounded border border-border/40 text-[10px] text-foreground select-all truncate max-w-xs md:max-w-md">
+                        {result.input}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </main>
     </div>
   );
 };

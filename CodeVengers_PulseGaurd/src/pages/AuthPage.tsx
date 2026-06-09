@@ -1,215 +1,290 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
-import Navbar from "@/components/Navbar";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Shield, Mail, Lock, User, Eye, EyeOff, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import type { Role } from '@/context/AuthContext';
 
-type Role = "parent" | "child";
+type Mode = 'login' | 'register';
+
+const ROLES: { value: Role; label: string; desc: string; color: string }[] = [
+  { value: 'normal', label: 'Individual', desc: 'Personal protection for yourself', color: 'border-blue-500/30 hover:border-blue-500/60' },
+  { value: 'parent', label: 'Guardian', desc: 'Monitor and protect your family', color: 'border-violet-500/30 hover:border-violet-500/60' },
+  { value: 'child', label: 'Protected', desc: 'Stay safe under parental guidance', color: 'border-emerald-500/30 hover:border-emerald-500/60' },
+];
+
+const passwordStrength = (pw: string) => {
+  let score = 0;
+  if (pw.length >= 8) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  return score;
+};
+
+const strengthLabel = ['', 'Weak', 'Fair', 'Good', 'Strong'];
+const strengthColor = ['', 'bg-red-500', 'bg-amber-400', 'bg-blue-400', 'bg-emerald-400'];
 
 const AuthPage = () => {
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [search] = useSearchParams();
-  const { user, role, login, register } = useAuth();
-  const [mode, setMode] = useState<"login" | "register">("login");
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [r, setR] = useState<Role>("parent");
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
+  const { login, register, user, loading } = useAuth();
 
-  const flow = useMemo<"normal" | "family">(() => {
-    const m = (search.get("mode") || "normal").toLowerCase();
-    return m === "family" ? "family" : "normal";
-  }, [search]);
+  const [mode, setMode] = useState<Mode>(searchParams.get('mode') === 'register' || searchParams.get('mode') === 'family' ? 'register' : 'login');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [role, setRole] = useState<Role>('normal');
+  const [showPw, setShowPw] = useState(false);
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (user && role) {
-      if (role === "parent") navigate("/parent-dashboard", { replace: true });
-      else if (role === "child") navigate("/child-dashboard", { replace: true });
-      else navigate("/scanner", { replace: true });
-    }
-  }, [user, role, navigate]);
+    if (!loading && user) navigate(
+      user.role === 'parent' ? '/parent-dashboard' : user.role === 'child' ? '/child-dashboard' : '/scanner'
+    );
+  }, [user, loading, navigate]);
+
+  const pwScore = passwordStrength(password);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+    if (!email || !password) { setError('Please fill in all required fields.'); return; }
+    if (mode === 'register' && !name) { setError('Please enter your name.'); return; }
+
     setSubmitting(true);
-    setError("");
     try {
-      if (mode === "login") {
-        await login(email.trim(), password);
+      if (mode === 'login') {
+        await login(email, password);
       } else {
-        await register(name.trim(), email.trim(), password, r);
+        await register(name, email, password, role);
       }
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Authentication failed";
-      setError(msg);
+    } catch (err: any) {
+      setError(err.message || 'Authentication failed. Please try again.');
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden mesh-bg">
-      <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-primary/20 blur-[100px] rounded-full mix-blend-screen pointer-events-none" animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }} transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }} as={motion.div} />
-      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-[#3b82f6]/20 blur-[120px] rounded-full mix-blend-screen pointer-events-none" animate={{ scale: [1, 1.3, 1], opacity: [0.2, 0.4, 0.2] }} transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 2 }} as={motion.div} />
+    <div className="min-h-screen relative flex items-center justify-center py-16 px-4">
+      {/* Background decoration */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-primary/5 blur-3xl pointer-events-none" />
 
-      <Navbar />
-      <section className="py-20 md:py-32 relative z-10 flex flex-col items-center justify-center container mx-auto px-4">
-
+      <div className="relative z-10 w-full max-w-md">
+        {/* Brand */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, type: "spring", bounce: 0.4 }}
-          className="mb-8 text-center"
+          className="flex flex-col items-center mb-10"
         >
-          <h1 className="mb-2 text-4xl md:text-5xl font-extrabold tracking-tight text-foreground bg-clip-text text-transparent bg-gradient-to-r from-primary to-[#3b82f6]">
-            {mode === "login" ? "Welcome Back" : "Create Account"}
+          <Link to="/" className="flex items-center gap-2.5 mb-8 group">
+            <div className="h-10 w-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-[0_0_30px_hsl(210_100%_56%/0.4)] group-hover:shadow-[0_0_40px_hsl(210_100%_56%/0.6)] transition-shadow">
+              <Shield className="h-5 w-5 text-white" />
+            </div>
+            <span className="text-xl font-display font-bold text-foreground">PulseGuard</span>
+          </Link>
+          <h1 className="text-3xl font-display font-bold text-foreground mb-2">
+            {mode === 'login' ? 'Welcome back' : 'Create account'}
           </h1>
-          <p className="text-base text-muted-foreground max-w-sm mx-auto">
-            {mode === "login" ? "Access your dashboard to continue securing your digital life." : "Secure your and your family's digital footprint today."}
+          <p className="text-muted-foreground text-sm">
+            {mode === 'login' ? 'Sign in to your account to continue' : 'Start protecting yourself and your family'}
           </p>
         </motion.div>
 
+        {/* Card */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, rotateX: -10 }}
-          animate={{ opacity: 1, scale: 1, rotateX: 0 }}
-          transition={{ duration: 0.8, type: "spring", bounce: 0.4, delay: 0.1 }}
-          style={{ perspective: "1000px" }}
-          className="w-full max-w-md"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="glass-card rounded-2xl border border-white/8 p-8"
         >
-          <form
-            onSubmit={handleSubmit}
-            className="glass-panel space-y-5 rounded-3xl p-8 transform-gpu transition-all hover:shadow-primary/10 hover:shadow-2xl border border-white/10 dark:border-white/5"
-          >
-            <AnimatePresence mode="wait">
-              {mode === "register" && (
+          {/* Mode toggle */}
+          <div className="flex glass rounded-xl p-1 mb-8">
+            {(['login', 'register'] as Mode[]).map(m => (
+              <button
+                key={m}
+                onClick={() => { setMode(m); setError(''); }}
+                className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+                  mode === m ? 'bg-primary text-white shadow-md' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {m === 'login' ? 'Sign In' : 'Register'}
+              </button>
+            ))}
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <AnimatePresence>
+              {mode === 'register' && (
                 <motion.div
+                  key="name"
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="overflow-hidden"
+                  transition={{ duration: 0.2 }}
                 >
-                  <label className="mb-1.5 block text-sm font-semibold text-foreground/80">
-                    Full Name
-                  </label>
-                  <Input
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="John Doe"
-                    required
-                    className="h-12 rounded-xl bg-background/50 border-white/10 focus-visible:ring-primary focus-visible:ring-offset-2 transition-all"
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <div>
-              <label className="mb-1.5 block text-sm font-semibold text-foreground/80">
-                Email Address
-              </label>
-              <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                required
-                className="h-12 rounded-xl bg-background/50 border-white/10 focus-visible:ring-primary focus-visible:ring-offset-2 transition-all"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1.5 block text-sm font-semibold text-foreground/80">
-                Password
-              </label>
-              <Input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                className="h-12 rounded-xl bg-background/50 border-white/10 focus-visible:ring-primary focus-visible:ring-offset-2 transition-all"
-              />
-            </div>
-
-            <AnimatePresence mode="wait">
-              {mode === "register" && flow === "family" && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="overflow-hidden"
-                >
-                  <label className="mb-1.5 block text-sm font-semibold text-foreground/80">
-                    Role in Family
-                  </label>
+                  <label className="block text-sm font-semibold text-foreground mb-2">Full Name</label>
                   <div className="relative">
-                    <select
-                      value={r}
-                      onChange={(e) => setR(e.target.value as Role)}
-                      className="h-12 w-full appearance-none rounded-xl border border-border/50 bg-background/50 px-4 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
-                    >
-                      <option value="parent">Parent</option>
-                      <option value="child">Child</option>
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-muted-foreground">
-                      <svg className="h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" /></svg>
-                    </div>
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <input
+                      id="auth-name"
+                      type="text"
+                      value={name}
+                      onChange={e => setName(e.target.value)}
+                      placeholder="Your name"
+                      className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-foreground placeholder:text-muted-foreground text-sm font-medium focus:outline-none focus:border-primary/50 focus:bg-white/8 transition-all"
+                    />
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {mode === "register" && flow === "normal" && (
-              <input type="hidden" value="normal" />
-            )}
+            <div>
+              <label className="block text-sm font-semibold text-foreground mb-2">Email Address</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <input
+                  id="auth-email"
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-foreground placeholder:text-muted-foreground text-sm font-medium focus:outline-none focus:border-primary/50 focus:bg-white/8 transition-all"
+                  autoComplete="email"
+                />
+              </div>
+            </div>
 
+            <div>
+              <label className="block text-sm font-semibold text-foreground mb-2">Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <input
+                  id="auth-password"
+                  type={showPw ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full pl-10 pr-12 py-3 rounded-xl bg-white/5 border border-white/10 text-foreground placeholder:text-muted-foreground text-sm font-medium focus:outline-none focus:border-primary/50 focus:bg-white/8 transition-all"
+                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                />
+                <button type="button" onClick={() => setShowPw(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+                  {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+
+              {/* Password strength (register only) */}
+              <AnimatePresence>
+                {mode === 'register' && password && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="mt-2"
+                  >
+                    <div className="flex gap-1 mb-1">
+                      {[1, 2, 3, 4].map(i => (
+                        <div key={i} className={`h-1 flex-1 rounded-full transition-all ${i <= pwScore ? strengthColor[pwScore] : 'bg-white/10'}`} />
+                      ))}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      Strength: <span className={`font-bold ${pwScore <= 1 ? 'text-red-400' : pwScore === 2 ? 'text-amber-400' : pwScore === 3 ? 'text-blue-400' : 'text-emerald-400'}`}>{strengthLabel[pwScore]}</span>
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Role selector (register only) */}
+            <AnimatePresence>
+              {mode === 'register' && (
+                <motion.div
+                  key="role"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <label className="block text-sm font-semibold text-foreground mb-3">I am a...</label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {ROLES.map(r => (
+                      <button
+                        key={r.value}
+                        type="button"
+                        onClick={() => setRole(r.value)}
+                        className={`relative p-3 rounded-xl border text-left transition-all ${
+                          role === r.value
+                            ? 'bg-primary/10 border-primary/50 text-foreground'
+                            : `bg-white/3 ${r.color} text-muted-foreground`
+                        }`}
+                      >
+                        {role === r.value && (
+                          <CheckCircle2 className="absolute top-2 right-2 h-3.5 w-3.5 text-primary" />
+                        )}
+                        <div className="text-xs font-bold mb-0.5">{r.label}</div>
+                        <div className="text-[10px] leading-tight opacity-70">{r.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Error */}
             <AnimatePresence>
               {error && (
                 <motion.div
-                  initial={{ opacity: 0, y: -10 }}
+                  initial={{ opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive font-medium flex items-center gap-2"
+                  exit={{ opacity: 0 }}
+                  className="flex items-center gap-2.5 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-sm text-red-400"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                  <AlertCircle className="h-4 w-4 shrink-0" />
                   {error}
                 </motion.div>
               )}
             </AnimatePresence>
 
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              <Button
-                type="submit"
-                disabled={submitting}
-                className="mt-4 w-full h-12 gap-2 rounded-xl text-base font-bold shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all bg-gradient-to-r from-primary to-[#3b82f6] border-0"
-              >
-                {submitting ? (
-                  <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
-                  </motion.div>
-                ) : (
-                  mode === "login" ? "Login Securely" : "Create Account"
-                )}
-              </Button>
-            </motion.div>
-
-            <div className="mt-6 text-center">
-              <button
-                type="button"
-                onClick={() => setMode(mode === "login" ? "register" : "login")}
-                className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors hover:underline underline-offset-4"
-              >
-                {mode === "login"
-                  ? "Don't have an account? Create one"
-                  : "Already registered? Sign in"}
-              </button>
-            </div>
+            {/* Submit */}
+            <button
+              id="auth-submit"
+              type="submit"
+              disabled={submitting}
+              className="w-full py-3.5 rounded-xl font-bold text-white btn-primary btn-shine flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {submitting ? (
+                <span className="flex items-center gap-2">
+                  <div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  {mode === 'login' ? 'Signing in...' : 'Creating account...'}
+                </span>
+              ) : (
+                <>
+                  {mode === 'login' ? 'Sign In' : 'Create Account'}
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
+            </button>
           </form>
+
+          {/* Toggle link */}
+          <p className="text-center text-sm text-muted-foreground mt-6">
+            {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
+            <button
+              onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(''); }}
+              className="text-primary font-semibold hover:underline"
+            >
+              {mode === 'login' ? 'Create one' : 'Sign in'}
+            </button>
+          </p>
         </motion.div>
-      </section>
+
+        {/* Back to home */}
+        <p className="text-center text-xs text-muted-foreground mt-6">
+          <Link to="/" className="hover:text-foreground transition-colors">← Back to homepage</Link>
+        </p>
+      </div>
     </div>
   );
 };

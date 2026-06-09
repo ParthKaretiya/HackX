@@ -1,142 +1,144 @@
-import { ClipboardPaste, Search, Brain, CheckCircle, ArrowRight, GraduationCap } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
-import { motion, useScroll, useTransform } from 'framer-motion';
-import { SafetyQuiz } from './SafetyQuiz';
-
-const steps = [
-  {
-    Icon: ClipboardPaste,
-    title: 'Paste Data',
-    description: 'Copy anything suspicious and drop it directly into the scanner.',
-    color: 'from-zinc-500 to-zinc-400'
-  },
-  {
-    Icon: Search,
-    title: 'Domain Scan',
-    description: 'Our engine checks for known scam indicators and domain age.',
-    color: 'from-blue-600 to-cyan-500'
-  },
-  {
-    Icon: Brain,
-    title: 'Behavioral Check',
-    description: 'Text is analyzed for urgency tactics and emotional triggers.',
-    color: 'from-purple-600 to-pink-500'
-  },
-  {
-    Icon: CheckCircle,
-    title: 'Clear Verdict',
-    description: 'Receive a color-coded result with human explanations.',
-    color: 'from-emerald-500 to-teal-400'
-  },
-];
+import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
+import { Upload, Cpu, ShieldCheck, ArrowRight, AlertTriangle, Info } from 'lucide-react';
 
 const HowItWorks = () => {
-  const navigate = useNavigate();
-  const { scrollYProgress } = useScroll();
-  const scale = useTransform(scrollYProgress, [0, 1], [0.95, 1.05]);
+  const { t } = useTranslation();
+
+  const steps = [
+    {
+      step: '01',
+      icon: Upload,
+      title: t('how_step_1_title'),
+      description: t('how_step_1_desc'),
+      glow: "hover:shadow-[0_16px_32px_rgba(59,130,246,0.04)] hover:border-blue-500/20",
+      accent: "text-blue-500 bg-blue-500/5 border-blue-500/10",
+    },
+    {
+      step: '02',
+      icon: Cpu,
+      title: t('how_step_2_title'),
+      description: t('how_step_2_desc'),
+      glow: "hover:shadow-[0_16px_32px_rgba(139,92,246,0.04)] hover:border-violet-500/20",
+      accent: "text-violet-500 bg-violet-500/5 border-violet-500/10",
+    },
+    {
+      step: '03',
+      icon: ShieldCheck,
+      title: t('how_step_3_title'),
+      description: t('how_step_3_desc'),
+      glow: "hover:shadow-[0_16px_32px_rgba(16,185,129,0.04)] hover:border-emerald-500/20",
+      accent: "text-emerald-500 bg-emerald-500/5 border-emerald-500/10",
+    },
+  ];
 
   return (
-    <section className="relative py-32 md:py-48 z-10 overflow-hidden bg-black/20">
-      <motion.div style={{ scale }} className="absolute inset-0 bg-primary/5 blur-[150px] mix-blend-screen pointer-events-none" />
+    <section className="relative py-24 md:py-32 z-10 bg-secondary/10" id="how-it-works">
+      {/* Background soft lighting */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gradient-to-r from-violet-500/5 to-blue-500/5 rounded-full blur-[100px] pointer-events-none -z-10" />
 
-      {/* Grid Lines */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
-
-      <div className="container mx-auto px-4 relative z-10">
+      <div className="container mx-auto px-4 relative max-w-6xl">
+        {/* Header */}
         <motion.div
-          initial={{ opacity: 0, y: 50 }}
+          initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.8, type: "spring" }}
-          className="mb-24 text-center"
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          className="mb-20 text-center"
         >
-          <h2 className="mb-6 text-4xl font-black tracking-tight text-foreground md:text-5xl lg:text-6xl drop-shadow-xl">
-            How PulseGuard Works
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-display font-semibold tracking-tight mb-4 text-foreground">
+            {t('how_title')} <span className="text-muted-foreground">{t('how_title_highlight')}</span>
           </h2>
-          <p className="text-xl text-muted-foreground font-semibold">Four simple steps to absolute online certainty.</p>
+          <p className="mx-auto max-w-2xl text-lg text-muted-foreground font-medium">
+            {t('how_desc')}
+          </p>
         </motion.div>
 
-        {/* Timeline steps */}
-        <div className="mx-auto max-w-7xl relative">
-          {/* Connecting Line Vector */}
-          <div className="absolute top-1/2 left-0 w-full h-1 hidden lg:block bg-gradient-to-r from-transparent via-primary/30 to-transparent -translate-y-1/2 z-0">
-            <motion.div
-              animate={{ x: ["0%", "100%", "0%"] }}
-              transition={{ duration: 5, ease: "linear", repeat: Infinity }}
-              className="h-full w-1/4 bg-gradient-to-r from-transparent via-primary to-transparent"
-            />
-          </div>
+        {/* Steps */}
+        <div className="relative mb-24">
+          {/* Connector line with animated background gradient */}
+          <div className="hidden lg:block absolute top-10 left-1/2 -translate-x-1/2 w-2/3 h-[2px] bg-gradient-to-r from-blue-500/25 via-violet-500/25 to-emerald-500/25" />
 
-          <div className="grid gap-12 sm:grid-cols-2 lg:grid-cols-4 relative z-10">
-            {steps.map((step, i) => (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 lg:gap-8">
+            {steps.map((s, i) => (
               <motion.div
-                initial={{ opacity: 0, y: 50, scale: 0.9 }}
-                whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                viewport={{ once: true, margin: "-50px" }}
-                transition={{ type: 'spring', stiffness: 200, damping: 20, delay: i * 0.15 }}
-                key={i}
-                className="group relative"
+                key={s.step}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, delay: i * 0.15, ease: [0.16, 1, 0.3, 1] }}
+                className={`relative flex flex-col items-center text-center p-6 rounded-3xl border border-transparent transition-all duration-300 ${s.glow}`}
               >
-                {/* Float Container */}
-                <motion.div
-                  whileHover={{ y: -15 }}
-                  className="bg-[#0f1115]/80 backdrop-blur-3xl rounded-[2.5rem] p-8 border border-white/10 shadow-[0_20px_40px_rgba(0,0,0,0.4)] transition-all hover:shadow-[0_40px_80px_rgba(59,130,246,0.3)] hover:border-primary/50 relative overflow-hidden"
-                >
-                  {/* Hover Glow */}
-                  <div className={`absolute -inset-10 bg-gradient-to-br \${step.color} opacity-0 group-hover:opacity-10 blur-3xl transition-opacity duration-700`}></div>
+                {/* Step number + icon */}
+                <div className={`relative mb-8 flex h-20 w-20 items-center justify-center rounded-3xl bg-background border border-border shadow-sm z-10 transition-transform duration-300 hover:scale-105`}>
+                  <s.icon className="h-8 w-8 text-foreground" strokeWidth={1.5} />
+                  <span className={`absolute -top-3 -right-3 flex h-7 w-7 items-center justify-center rounded-full border text-[10px] font-bold ${s.accent}`}>
+                    {s.step}
+                  </span>
+                </div>
 
-                  <div className="relative z-10">
-                    <div className="mb-8 flex items-center justify-between">
-                      <div className={`flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br \${step.color} text-white shadow-xl shadow-black/50 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500`}>
-                        <step.Icon className="h-8 w-8" />
-                      </div>
-                      <div className="text-5xl font-black text-white/5 right-4 top-4 absolute group-hover:text-white/10 transition-colors pointer-events-none">
-                        0{i + 1}
-                      </div>
-                    </div>
-                    <h3 className="mb-4 text-2xl font-black leading-snug text-white group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-gray-400 transition-all">{step.title}</h3>
-                    <p className="text-base leading-relaxed text-white/70 font-medium">{step.description}</p>
+                <h3 className="mb-3 text-xl font-display font-semibold text-foreground tracking-tight">{s.title}</h3>
+                <p className="text-muted-foreground leading-relaxed text-[14px] max-w-[280px] font-medium">{s.description}</p>
+
+                {/* Arrow connector on mobile */}
+                {i < steps.length - 1 && (
+                  <div className="lg:hidden mt-8 text-border">
+                    <ArrowRight className="h-6 w-6 rotate-90 text-border mx-auto" />
                   </div>
-                </motion.div>
+                )}
               </motion.div>
             ))}
           </div>
         </div>
 
+        {/* Bottom demo card styled like the premium scanner result */}
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
+          initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ delay: 0.6, type: "spring" }}
-          className="mt-24 text-center"
+          transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          className="mx-auto max-w-2xl bg-background rounded-3xl p-6 md:p-8 border border-red-500/20 shadow-xl shadow-red-500/[0.02] dark:shadow-red-500/[0.04]"
         >
-          <Button
-            size="lg"
-            onClick={() => navigate('/scanner')}
-            className="group relative overflow-hidden h-20 gap-4 rounded-full px-16 text-2xl font-black shadow-[0_0_50px_rgba(59,130,246,0.5)] transition-all hover:scale-110 hover:shadow-[0_0_80px_rgba(59,130,246,0.8)] bg-gradient-to-r from-primary via-blue-500 to-cyan-400 border-0 text-white"
-          >
-            <div className="absolute inset-0 w-1/2 h-full bg-white/30 skew-x-[30deg] -translate-x-[200%] group-hover:translate-x-[300%] transition-transform duration-1000 ease-in-out"></div>
-            Start Scanning
-            <ArrowRight className="h-8 w-8 transition-transform group-hover:translate-x-2" />
-          </Button>
-        </motion.div>
-        {/* Safety Quiz Section */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          className="mt-32 max-w-4xl mx-auto"
-        >
-          <div className="text-center mb-12">
-            <h3 className="text-3xl font-black mb-4 flex items-center justify-center gap-3">
-              <GraduationCap className="h-8 w-8 text-primary" />
-              Test Your Safety Knowledge
-            </h3>
-            <p className="text-muted-foreground font-medium">Think you can spot a scam? Take our quick interactive quiz.</p>
-          </div>
-          <div className="glass-panel p-8 md:p-12 rounded-[3rem] border border-white/10 shadow-2xl bg-black/40 backdrop-blur-3xl">
-            <SafetyQuiz />
+          <div className="flex gap-4">
+            <div className="h-8 w-8 rounded-full flex items-center justify-center shrink-0 bg-red-500/10 text-red-500 border border-red-500/20 animate-pulse">
+              <AlertTriangle className="h-4 w-4" />
+            </div>
+            
+            <div className="flex-1 space-y-4 pt-1 text-left">
+              <div>
+                <h3 className="text-base font-bold text-red-500 mb-1 flex items-center gap-2">
+                  {t('how_demo_threat')}
+                </h3>
+                <p className="text-sm text-foreground/80 leading-relaxed font-medium">
+                  {t('how_demo_threat_desc')}
+                </p>
+              </div>
+
+              <div className="bg-secondary/40 border border-border/50 rounded-2xl p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <Info className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t('scan_breakdown')}</span>
+                </div>
+                <ul className="space-y-2.5 font-medium text-sm text-foreground/80">
+                  <li className="flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-red-500 shrink-0" />
+                    <span>{t('how_demo_factor_1')}</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-red-500 shrink-0" />
+                    <span>{t('how_demo_factor_2')}</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-red-500 shrink-0" />
+                    <span>{t('how_demo_factor_3')}</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="text-xs text-muted-foreground font-medium">
+                {t('scan_scanned_input')}: <span className="font-mono bg-secondary px-2 py-1 rounded text-[10px] text-foreground/80 border border-border/50">https://secure-banklogin.xyz/verify</span>
+              </div>
+            </div>
           </div>
         </motion.div>
       </div>
